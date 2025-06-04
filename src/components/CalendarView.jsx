@@ -7,35 +7,54 @@ const CalendarView = () => {
   const [activities, setActivities] = useState([]);
   const [selectedActivities, setSelectedActivities] = useState([]);
 
-  // Загрузка активностей из localStorage при первом рендере
+  const formatDate = (date) =>
+  date.toLocaleDateString('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+
+  // Загрузка активностей из localStorage
   useEffect(() => {
     const stored = localStorage.getItem('activities');
     if (stored) {
       const parsed = JSON.parse(stored);
       setActivities(parsed);
-      filterActivitiesByDate(value, parsed); // сразу фильтруем по текущей дате
+      filterActivitiesByDate(value, parsed);
     }
   }, []);
 
-  // При выборе даты — фильтруем активности
+  // Фильтрация при смене даты
   const handleDateChange = (date) => {
     setValue(date);
     filterActivitiesByDate(date, activities);
   };
 
   const filterActivitiesByDate = (date, allActivities) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDate(date);
     const filtered = allActivities.filter(act => act.date === dateStr);
     setSelectedActivities(filtered);
   };
 
-  // Определение дат, на которые есть активности
+  // Удаление активности
+  const handleDelete = (indexToDelete) => {
+    const dateStr = formatDate(value);
+    const updatedActivities = activities.filter((act, i) => {
+      if (act.date !== dateStr) return true;
+      const filteredForDate = activities.filter(a => a.date === dateStr);
+      return act !== filteredForDate[indexToDelete];
+    });
+    setActivities(updatedActivities);
+    setSelectedActivities(prev => prev.filter((_, i) => i !== indexToDelete));
+    localStorage.setItem('activities', JSON.stringify(updatedActivities)); // сохранение!
+  };
+
   const activityDates = new Set(activities.map(a => a.date));
 
-  // Добавляем точку к датам с активностями
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDate(date);
       if (activityDates.has(dateStr)) {
         return (
           <div className="flex justify-center mt-1">
@@ -57,15 +76,23 @@ const CalendarView = () => {
 
       <div className="mt-4">
         <h3 className="text-lg font-bold mb-2">
-          Aktywności dla: {value.toISOString().split('T')[0]}
+          Aktywności dla: {formatDate(value)}
         </h3>
 
         {selectedActivities.length > 0 ? (
           <ul className="space-y-2">
             {selectedActivities.map((a, i) => (
-              <li key={i} className="border p-3 rounded">
-                <strong>{a.type}</strong> – {a.date} <br />
-                Czas: {a.duration} min, Dystans: {a.distance} km, Intensywność: {a.intensity}
+              <li key={i} className="border p-3 rounded flex justify-between items-start">
+                <div>
+                  <strong>{a.type}</strong> – {a.date} <br />
+                  Czas: {a.duration} min, Dystans: {a.distance} km, Intensywność: {a.intensity}
+                </div>
+                <button
+                  onClick={() => handleDelete(i)}
+                  className="text-red-600 hover:underline ml-4"
+                >
+                  Usuń
+                </button>
               </li>
             ))}
           </ul>

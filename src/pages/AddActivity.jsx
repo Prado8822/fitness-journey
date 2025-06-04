@@ -11,11 +11,11 @@ const AddActivity = () => {
 
   const [activities, setActivities] = useState([]);
 
-  // Загружаем из localStorage при старте
+  // Загружаем при старте
   useEffect(() => {
-    const saved = localStorage.getItem('activities');
-    if (saved) {
-      setActivities(JSON.parse(saved));
+    const stored = localStorage.getItem('activities');
+    if (stored) {
+      setActivities(JSON.parse(stored));
     }
   }, []);
 
@@ -38,6 +38,13 @@ const AddActivity = () => {
       intensity: '',
       date: '',
     });
+  };
+
+  const handleDelete = (index) => {
+    const updated = [...activities];
+    updated.splice(index, 1);
+    setActivities(updated);
+    localStorage.setItem('activities', JSON.stringify(updated));
   };
 
   return (
@@ -86,9 +93,17 @@ const AddActivity = () => {
       <h3 className="text-xl font-bold mt-8">Dodane aktywności:</h3>
       <ul className="mt-2 space-y-2">
         {activities.map((a, i) => (
-          <li key={i} className="border p-3 rounded">
-            <strong>{a.type}</strong> – {a.date} <br />
-            Czas: {a.duration} min, Dystans: {a.distance} km, Intensywność: {a.intensity}
+          <li key={i} className="border p-3 rounded flex justify-between items-start gap-4">
+            <div>
+              <strong>{a.type}</strong> – {a.date} <br />
+              Czas: {a.duration} min, Dystans: {a.distance} km, Intensywność: {a.intensity}
+            </div>
+            <button
+              onClick={() => handleDelete(i)}
+              className="text-red-600 hover:underline"
+            >
+              Usuń
+            </button>
           </li>
         ))}
       </ul>
