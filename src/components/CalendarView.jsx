@@ -8,14 +8,18 @@ const CalendarView = () => {
   const [selectedActivities, setSelectedActivities] = useState([]);
 
   const formatDate = (date) =>
-  date.toLocaleDateString('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+    date.toLocaleDateString('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
 
+  // 🎯 Цель: минимум 30 минут активности в день
+  const isGoalMet = (activitiesForDay) => {
+    const totalMinutes = activitiesForDay.reduce((sum, a) => sum + Number(a.duration), 0);
+    return totalMinutes >= 30;
+  };
 
-  // Загрузка активностей из localStorage
   useEffect(() => {
     const stored = localStorage.getItem('activities');
     if (stored) {
@@ -25,7 +29,6 @@ const CalendarView = () => {
     }
   }, []);
 
-  // Фильтрация при смене даты
   const handleDateChange = (date) => {
     setValue(date);
     filterActivitiesByDate(date, activities);
@@ -33,24 +36,23 @@ const CalendarView = () => {
 
   const filterActivitiesByDate = (date, allActivities) => {
     const dateStr = formatDate(date);
-    const filtered = allActivities.filter(act => act.date === dateStr);
+    const filtered = allActivities.filter((act) => act.date === dateStr);
     setSelectedActivities(filtered);
   };
 
-  // Удаление активности
   const handleDelete = (indexToDelete) => {
     const dateStr = formatDate(value);
     const updatedActivities = activities.filter((act, i) => {
       if (act.date !== dateStr) return true;
-      const filteredForDate = activities.filter(a => a.date === dateStr);
+      const filteredForDate = activities.filter((a) => a.date === dateStr);
       return act !== filteredForDate[indexToDelete];
     });
     setActivities(updatedActivities);
-    setSelectedActivities(prev => prev.filter((_, i) => i !== indexToDelete));
-    localStorage.setItem('activities', JSON.stringify(updatedActivities)); // сохранение!
+    setSelectedActivities((prev) => prev.filter((_, i) => i !== indexToDelete));
+    localStorage.setItem('activities', JSON.stringify(updatedActivities));
   };
 
-  const activityDates = new Set(activities.map(a => a.date));
+  const activityDates = new Set(activities.map((a) => a.date));
 
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
@@ -80,22 +82,33 @@ const CalendarView = () => {
         </h3>
 
         {selectedActivities.length > 0 ? (
-          <ul className="space-y-2">
-            {selectedActivities.map((a, i) => (
-              <li key={i} className="border p-3 rounded flex justify-between items-start">
-                <div>
-                  <strong>{a.type}</strong> – {a.date} <br />
-                  Czas: {a.duration} min, Dystans: {a.distance} km, Intensywność: {a.intensity}
-                </div>
-                <button
-                  onClick={() => handleDelete(i)}
-                  className="text-red-600 hover:underline ml-4"
-                >
-                  Usuń
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div
+            className={`p-4 rounded-xl border shadow-sm mb-4 transition
+              ${isGoalMet(selectedActivities) ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
+
+            <p className={`mb-3 font-medium ${isGoalMet(selectedActivities) ? 'text-green-600' : 'text-red-600'}`}>
+              {isGoalMet(selectedActivities)
+                ? '🎯 Cel na ten dzień został osiągnięty!'
+                : '❌ Cel na ten dzień NIE został osiągnięty.'}
+            </p>
+
+            <ul className="space-y-2">
+              {selectedActivities.map((a, i) => (
+                <li key={i} className="border p-3 rounded flex justify-between items-start bg-white">
+                  <div>
+                    <strong>{a.type}</strong> – {a.date} <br />
+                    Czas: {a.duration} min, Dystans: {a.distance} km, Intensywność: {a.intensity}
+                  </div>
+                  <button
+                    onClick={() => handleDelete(i)}
+                    className="text-red-600 hover:underline ml-4"
+                  >
+                    Usuń
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : (
           <p className="text-gray-500">Brak aktywności w tym dniu.</p>
         )}
