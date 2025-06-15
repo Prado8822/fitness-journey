@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'SportTracker',
-        short_name: 'SportTracker',
+        name: 'FitFlow',
+        short_name: 'FitFlow',
         description: 'Progresywna aplikacja do śledzenia aktywności sportowych i celów fitness',
         theme_color: '#000',
         background_color: '#ffffff',
