@@ -59,10 +59,13 @@ const GoalsPage = () => {
     <div className="p-4">
       <h1 className="text-xl font-bold mb-4">Cele i motywacja</h1>
 
-      <Tracker />
-
       <GoalTracker current={current} goal={goal} />
       <BadgeSystem badges={badges} />
+
+      <div className="mt-6">
+        <Tracker />
+      </div>
+
     </div>
   );
 };

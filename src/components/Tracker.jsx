@@ -64,34 +64,38 @@ const TrackerWithMap = () => {
   }, []);
 
   return (
-    <div>
-      <h2>Трекер активности</h2>
-      <p>Пройдено: {(distance / 1000).toFixed(2)} км</p>
-      <p>Скорость: {speed.toFixed(2)} км/ч</p>
+<div className="mt-6 p-4 bg-white shadow rounded-lg">
+    <h2 className="text-lg font-bold mb-2">📍 Tracker aktywności</h2>
+    <p className="mb-1 text-gray-700">Przebyta odległość: <span className="font-semibold">{(distance / 1000).toFixed(2)} km</span></p>
+    <p className="mb-4 text-gray-700">Prędkość: <span className="font-semibold">{speed.toFixed(2)} km/h</span></p>
 
-      <MapContainer
-        center={[51.505, -0.09]}
-        zoom={13}
-        style={{ height: '400px', width: '100%' }}
-        whenCreated={(mapInstance) => {
-          mapRef.current = mapInstance;
-        }}
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="© OpenStreetMap contributors"
-        />
-        {positions.length > 0 && (
-          <>
-            <Polyline
-              positions={positions.map((p) => [p.lat, p.lon])}
-              color="blue"
-            />
-            <Marker position={[positions[positions.length - 1].lat, positions[positions.length - 1].lon]} />
-          </>
-        )}
-      </MapContainer>
-    </div>
+
+  <div className="h-64 w-full rounded overflow-hidden">
+    <MapContainer
+      center={[52.069167, 19.480556]}
+      zoom={4}
+      className="h-full w-full"
+      whenCreated={(mapInstance) => {
+        mapRef.current = mapInstance;
+      }}
+    >
+      <TileLayer
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="© OpenStreetMap contributors"
+      />
+      {positions.length > 0 && (
+        <>
+          <Polyline
+            positions={positions.map((p) => [p.lat, p.lon])}
+            color="blue"
+          />
+          <Marker position={[positions[positions.length - 1].lat, positions[positions.length - 1].lon]} />
+        </>
+      )}
+    </MapContainer>
+  </div>
+</div>
+
   );
 };
 
