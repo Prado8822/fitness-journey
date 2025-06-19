@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import GoalTracker from '../components/GoalTracker';
 import BadgeSystem from '../components/BadgeSystem';
+import Tracker from '../components/Tracker';
 
 const GoalsPage = () => {
   const [activities, setActivities] = useState([]);
@@ -57,6 +58,9 @@ const GoalsPage = () => {
   return (
     <div className="p-4">
       <h1 className="text-xl font-bold mb-4">Cele i motywacja</h1>
+
+      <Tracker />
+
       <GoalTracker current={current} goal={goal} />
       <BadgeSystem badges={badges} />
     </div>
