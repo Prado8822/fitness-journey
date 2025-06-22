@@ -2,9 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Функция для подсчёта расстояния между двумя точками в метрах
 function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // радиус Земли в метрах
+  const R = 6371000; 
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
   const a =
@@ -18,7 +17,7 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
 }
 
 const TrackerWithMap = () => {
-  const [positions, setPositions] = useState([]); // {lat, lon, timestamp}
+  const [positions, setPositions] = useState([]); 
   const [distance, setDistance] = useState(0);
   const [speed, setSpeed] = useState(0);
   const mapRef = useRef();
@@ -43,10 +42,10 @@ const TrackerWithMap = () => {
               latitude,
               longitude
             );
-            const timeDiff = (timestamp - last.timestamp) / 1000; // секунды
+            const timeDiff = (timestamp - last.timestamp) / 1000; 
             const currSpeed = timeDiff > 0 ? dist / timeDiff : 0;
             setDistance((d) => d + dist);
-            setSpeed(currSpeed * 3.6); // перевод в км/ч
+            setSpeed(currSpeed * 3.6); 
           }
 
           return [...prev, { lat: latitude, lon: longitude, timestamp }];
@@ -64,13 +63,13 @@ const TrackerWithMap = () => {
   }, []);
 
   return (
-<div className="mt-6 p-4 bg-white shadow rounded-lg">
+<div className="mt-4 p-4 bg-white shadow rounded-lg">
     <h2 className="text-lg font-bold mb-2">📍 Tracker aktywności</h2>
     <p className="mb-1 text-gray-700">Przebyta odległość: <span className="font-semibold">{(distance / 1000).toFixed(2)} km</span></p>
     <p className="mb-4 text-gray-700">Prędkość: <span className="font-semibold">{speed.toFixed(2)} km/h</span></p>
 
 
-  <div className="h-64 w-full rounded overflow-hidden">
+  <div className="mt-10 h-64 w-full rounded overflow-hidden">
     <MapContainer
       center={[52.069167, 19.480556]}
       zoom={4}

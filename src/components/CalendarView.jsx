@@ -14,7 +14,6 @@ const CalendarView = () => {
       day: '2-digit',
     });
 
-  // 🎯 Цель: минимум 30 минут активности в день
   const isGoalMet = (activitiesForDay) => {
     const totalMinutes = activitiesForDay.reduce((sum, a) => sum + Number(a.duration), 0);
     return totalMinutes >= 30;

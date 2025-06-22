@@ -1,4 +1,3 @@
-// src/pages/Home.jsx
 import React from 'react';
 import ActivityList from '../components/ActivityList';
 import CalendarView from '../components/CalendarView';

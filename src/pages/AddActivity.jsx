@@ -11,7 +11,6 @@ const AddActivity = () => {
 
   const [activities, setActivities] = useState([]);
 
-  // Загружаем при старте
   useEffect(() => {
     const stored = localStorage.getItem('activities');
     if (stored) {

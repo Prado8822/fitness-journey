@@ -1,7 +1,6 @@
 import React from 'react';
 
 const ActivityList = ({ activities }) => {
-  // Проверка: если activities нет ИЛИ он пустой
   if (!activities || activities.length === 0) {
     return;
   }

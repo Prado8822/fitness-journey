@@ -16,12 +16,10 @@ const ActivityForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Сохраняем в localStorage
     const stored = JSON.parse(localStorage.getItem('activities')) || [];
     stored.push(activity);
     localStorage.setItem('activities', JSON.stringify(stored));
 
-    // Очищаем форму
     setActivity({ type: '', duration: '', distance: '', intensity: '', date: '' });
   };
 

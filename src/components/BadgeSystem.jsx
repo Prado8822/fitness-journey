@@ -18,6 +18,8 @@ const BadgeSystem = ({ badges }) => {
   ];
 
   const handleBadgeClick = (badge) => {
+    const achieved = badges.some((b) => b.title === badge.title);
+    if (!achieved) return; 
     setSelectedBadge(badge);
   };
 
@@ -25,21 +27,22 @@ const BadgeSystem = ({ badges }) => {
     setSelectedBadge(null);
   };
 
-  // Конфетти при открытии модалки
   useEffect(() => {
     if (selectedBadge) {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-      });
+      const achieved = badges.some((b) => b.title === selectedBadge.title);
+      if (achieved) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        });
+      }
     }
-  }, [selectedBadge]);
+  }, [selectedBadge, badges]);
 
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-
         {allBadges.map((badge) => {
           const achieved = badges.some((b) => b.title === badge.title);
 
@@ -47,7 +50,9 @@ const BadgeSystem = ({ badges }) => {
             <div
               key={badge.id}
               onClick={() => handleBadgeClick(badge)}
-              className="border rounded-xl p-4 shadow bg-white flex flex-col items-center text-center cursor-pointer hover:shadow-lg transition"
+              className={`border rounded-xl p-4 shadow flex flex-col items-center text-center transition
+                ${achieved ? 'bg-white cursor-pointer hover:shadow-lg' : 'bg-gray-200 opacity-60 cursor-default'}
+              `}
             >
               <div className="text-2xl mb-2">🏅 <strong>{badge.title}</strong></div>
               <div className="mb-2 text-sm text-gray-700">{badge.description}</div>
@@ -59,7 +64,6 @@ const BadgeSystem = ({ badges }) => {
         })}
       </div>
 
-      {/* Модальное окно */}
       {selectedBadge && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-80 text-center relative">
