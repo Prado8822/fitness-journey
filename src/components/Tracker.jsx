@@ -63,38 +63,62 @@ const TrackerWithMap = () => {
   }, []);
 
   return (
-<div className="mt-4 p-4 bg-white shadow rounded-lg">
-    <h2 className="text-lg font-bold mb-2">📍 Tracker aktywności</h2>
-    <p className="mb-1 text-gray-700">Przebyta odległość: <span className="font-semibold">{(distance / 1000).toFixed(2)} km</span></p>
-    <p className="mb-4 text-gray-700">Prędkość: <span className="font-semibold">{speed.toFixed(2)} km/h</span></p>
+    <div className="bg-[#13072E]/40 backdrop-blur-xl border border-purple-900/50 rounded-3xl p-6 shadow-[0_8px_30px_rgba(147,51,234,0.1)]">
+      <style>{`
+        .leaflet-container {
+          background: #0B0316 !important;
+        }
+        .leaflet-tile-pane {
+          filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        }
+      `}</style>
+      
+      <h2 className="text-lg font-bold mb-4 text-purple-200 tracking-wide drop-shadow-sm flex items-center gap-2">
+        <span className="text-fuchsia-400">📍</span> Tracker aktywności
+      </h2>
+      
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-[#0B0316]/60 border border-purple-500/20 rounded-2xl p-4 shadow-inner">
+          <p className="text-xs text-purple-300/70 font-medium uppercase tracking-wider mb-1">Odległość</p>
+          <p className="text-fuchsia-400 font-bold text-xl drop-shadow-[0_0_5px_rgba(232,121,249,0.5)]">
+            {(distance / 1000).toFixed(2)} <span className="text-sm font-normal text-purple-300">km</span>
+          </p>
+        </div>
+        <div className="bg-[#0B0316]/60 border border-purple-500/20 rounded-2xl p-4 shadow-inner">
+          <p className="text-xs text-purple-300/70 font-medium uppercase tracking-wider mb-1">Prędkość</p>
+          <p className="text-indigo-400 font-bold text-xl drop-shadow-[0_0_5px_rgba(129,140,248,0.5)]">
+            {speed.toFixed(2)} <span className="text-sm font-normal text-purple-300">km/h</span>
+          </p>
+        </div>
+      </div>
 
-
-  <div className="mt-10 h-64 w-full rounded overflow-hidden">
-    <MapContainer
-      center={[52.069167, 19.480556]}
-      zoom={4}
-      className="h-full w-full"
-      whenCreated={(mapInstance) => {
-        mapRef.current = mapInstance;
-      }}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution="© OpenStreetMap contributors"
-      />
-      {positions.length > 0 && (
-        <>
-          <Polyline
-            positions={positions.map((p) => [p.lat, p.lon])}
-            color="blue"
+      <div className="h-64 w-full rounded-2xl overflow-hidden border border-purple-500/30 relative shadow-[0_0_20px_rgba(147,51,234,0.2)]">
+        <MapContainer
+          center={[52.069167, 19.480556]}
+          zoom={4}
+          className="h-full w-full z-0"
+          whenCreated={(mapInstance) => {
+            mapRef.current = mapInstance;
+          }}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution="© OpenStreetMap contributors"
           />
-          <Marker position={[positions[positions.length - 1].lat, positions[positions.length - 1].lon]} />
-        </>
-      )}
-    </MapContainer>
-  </div>
-</div>
-
+          {positions.length > 0 && (
+            <>
+              <Polyline
+                positions={positions.map((p) => [p.lat, p.lon])}
+                color="#d946ef"
+                weight={4}
+                opacity={0.8}
+              />
+              <Marker position={[positions[positions.length - 1].lat, positions[positions.length - 1].lon]} />
+            </>
+          )}
+        </MapContainer>
+      </div>
+    </div>
   );
 };
 

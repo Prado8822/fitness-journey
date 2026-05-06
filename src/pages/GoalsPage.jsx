@@ -56,16 +56,14 @@ const GoalsPage = () => {
   }, []);
 
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold mb-4">Cele i motywacja</h1>
+    <div className="pb-10 pt-2 space-y-6">
+      <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-sm mb-6">
+        Cele i motywacja
+      </h1>
 
       <GoalTracker current={current} goal={goal} />
       <BadgeSystem badges={badges} />
-
-      <div className="mt-6">
-        <Tracker />
-      </div>
-
+      <Tracker />
     </div>
   );
 };
