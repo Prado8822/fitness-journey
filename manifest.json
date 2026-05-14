@@ -1,8 +1,0 @@
-{
-  "name": "Fitness Journey",
-  "short_name": "Fitness",
-  "start_url": ".",
-  "display": "standalone",
-  "background_color": "#0B0316",
-  "theme_color": "#0B0316"
-}
