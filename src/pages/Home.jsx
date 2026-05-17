@@ -2,23 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Flame, Dumbbell, Bike, Flower2, Footprints, Waves, Sparkles, HeartPulse,
-  Mountain, Swords, Wind, Activity, Clock, Zap, Smile, CheckCircle2, ChevronRight, MapPin, CalendarDays, ChevronLeft, X
+  Mountain, Swords, Wind, Activity, Clock, Zap, Smile, CheckCircle2, ChevronRight, MapPin, CalendarDays, ChevronLeft, X, Droplet, Apple, Battery
 } from 'lucide-react';
 
-const Home = ({ userName }) => {
+const Home = ({ userName, gender, periodDate }) => {
   const navigate = useNavigate();
   const [activities, setActivities] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
+  // Локальный стэйт для даты цикла
+  const [localPeriodDate, setLocalPeriodDate] = useState(periodDate);
+
+  // НОВЫЙ СТЭЙТ: Режим редактирования даты (чтобы не удалять всё из памяти)
+  const [isEditingCycle, setIsEditingCycle] = useState(false);
+
   // Стэйты для анимации взрыва
   const [isExploding, setIsExploding] = useState(false);
   const [explosionParticles, setExplosionParticles] = useState([]);
   const [explosionOrigin, setExplosionOrigin] = useState({ x: 0, y: 0 });
   
-  // Стэйт для информационной подсказки (когда серия < 2)
   const [showZeroStreakMessage, setShowZeroStreakMessage] = useState(false);
-
-  // Стэйт для анимации клика по карточке цели
   const [isGoalAnimating, setIsGoalAnimating] = useState(false);
 
   // Стэйты для модального окна полного календаря
@@ -26,8 +29,8 @@ const Home = ({ userName }) => {
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
 
-  // Стэйт для модального окна деталей активности
   const [selectedActivityItem, setSelectedActivityItem] = useState(null);
+  const [isCycleModalOpen, setIsCycleModalOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem('activities');
@@ -35,6 +38,10 @@ const Home = ({ userName }) => {
       setActivities(JSON.parse(stored));
     }
   }, []);
+
+  useEffect(() => {
+    setLocalPeriodDate(periodDate);
+  }, [periodDate]);
 
   const activityTypes = [
     { id: 'Bieganie', icon: <Flame size={20} className="text-orange-400" /> },
@@ -56,44 +63,103 @@ const Home = ({ userName }) => {
     return found ? found.icon : <Sparkles size={20} className="text-purple-400" />;
   };
 
-  // --- ЛОГИКА ДИНАМИЧЕСКОГО ПРИВЕТСТВИЯ ---
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return "Gotowy na poranny trening? 🌅";
-    if (hour >= 12 && hour < 18) return "Czas na popołudniową aktywność! ⚡";
-    return "Świetna robota dzisiaj! 🌙";
+    const todayStr = new Date().toISOString().split('T')[0];
+    const hasActivitySelected = activities.some(a => a.date === selectedDate);
+
+    // Если выбран СЕГОДНЯШНИЙ день
+    if (selectedDate === todayStr) {
+      if (hasActivitySelected) {
+        if (hour >= 5 && hour < 12) return "Poranny trening zaliczony! 🔥";
+        if (hour >= 12 && hour < 18) return "Świetne tempo dzisiaj! ⚡";
+        return "Świetna robota dzisiaj! 🌙";
+      } else {
+        if (hour >= 5 && hour < 12) return "Gotowy na poranny trening? 🌅";
+        if (hour >= 12 && hour < 18) return "Czas na popołudniową aktywność! ⚡";
+        return "Zacznij swoją aktywność już teraz! 🌙";
+      }
+    } 
+    // Если выбран ПРОШЛЫЙ день
+    else if (selectedDate < todayStr) {
+      if (hasActivitySelected) {
+        return "Trening zaliczony w tym dniu! 🔥";
+      } else {
+        return "Dzień regeneracji? 🌱";
+      }
+    } 
+    // Если выбран БУДУЩИЙ день
+    else {
+      return "Planujesz nowy trening? 🎯";
+    }
   };
 
-  // --- ЛОГИКА ЖЕНСКОГО ЦИКЛА (Пример: 10-й день) ---
-  const cycleDay = 10; // В будущем здесь будет переменная из настроек пользователя
-  let phaseName = "";
-  let phaseAdvice = "";
-  let PhaseIcon = Flower2;
-  let phaseColor = "text-pink-400";
+  const getCycleData = (targetDateStr, startDateStr) => {
+    if (gender !== 'female' || !startDateStr) return null;
+    
+    const target = new Date(targetDateStr);
+    const start = new Date(startDateStr);
+    target.setHours(0,0,0,0);
+    start.setHours(0,0,0,0);
+    
+    const diffTime = target - start;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return null; 
+    
+    const cycleDayNum = (diffDays % 28) + 1;
 
-  if (cycleDay >= 1 && cycleDay <= 5) {
-      phaseName = "Faza menstruacyjna";
-      phaseAdvice = "Słuchaj ciała. Wybierz Jogę lub Rozciąganie.";
-      PhaseIcon = Waves;
-      phaseColor = "text-blue-400";
-  } else if (cycleDay >= 6 && cycleDay <= 12) {
-      phaseName = "Faza folikularna";
-      phaseAdvice = "Energia rośnie! Świetny czas na Kardio.";
-      PhaseIcon = Zap;
-      phaseColor = "text-yellow-400";
-  } else if (cycleDay >= 13 && cycleDay <= 15) {
-      phaseName = "Owualcja";
-      phaseAdvice = "Jesteś na szczycie! Czas na Siłownię i ciężary.";
-      PhaseIcon = Flame;
-      phaseColor = "text-orange-400";
-  } else {
-      phaseName = "Faza lutealna";
-      phaseAdvice = "Zwolnij tempo. Wybierz Spacer lub Pilates.";
-      PhaseIcon = Flower2;
-      phaseColor = "text-pink-400";
-  }
+    if (cycleDayNum >= 1 && cycleDayNum <= 7) {
+      return { 
+        day: cycleDayNum, name: "Faza menstruacyjna", icon: Waves, color: "text-blue-400", bg: "bg-blue-500/20", border: "border-blue-500/30",
+        goal: 20, energy: "Niski", 
+        advice: "Daj ciału odpocząć. Wybierz lekką Jogę, Rozciąganie lub krótki spacer.",
+        nutrition: "Jedz pokarmy bogate w żelazo, zdrowe tłuszcze i gorzką czekoladę."
+      };
+    } else if (cycleDayNum >= 8 && cycleDayNum <= 12) { 
+      return { 
+        day: cycleDayNum, name: "Faza folikularna", icon: Zap, color: "text-yellow-400", bg: "bg-yellow-500/20", border: "border-yellow-500/30",
+        goal: 40, energy: "Wysoki", 
+        advice: "Energia rośnie! Świetny czas na Kardio, bieganie i nowe wyzwania.",
+        nutrition: "Wybieraj lekkie, świeże posiłki, sałatki, chude białko i fermentowane jedzenie."
+      };
+    } else if (cycleDayNum >= 13 && cycleDayNum <= 15) {
+      return { 
+        day: cycleDayNum, name: "Owulacja", icon: Flame, color: "text-orange-400", bg: "bg-orange-500/20", border: "border-orange-500/30",
+        goal: 45, energy: "Maksymalny", 
+        advice: "Jesteś na szczycie! Najlepszy czas na ciężką Siłownię i bicie rekordów.",
+        nutrition: "Jedz warzywa krzyżowe (np. brokuły), aby pomóc w metabolizmie estrogenów."
+      };
+    } else {
+      return { 
+        day: cycleDayNum, name: "Faza lutealna", icon: Flower2, color: "text-pink-400", bg: "bg-pink-500/20", border: "border-pink-500/30",
+        goal: 30, energy: "Spadający", 
+        advice: "Zwolnij tempo w drugiej połowie fazy. Wybierz Pilates lub umiarkowany trening.",
+        nutrition: "Sięgaj po złożone węglowodany (bataty, komosa), by zapobiec spadkom cukru."
+      };
+    }
+  };
 
-  // Логика Мини-недели
+  const currentCycleData = getCycleData(selectedDate, localPeriodDate);
+
+  const getDaysUntilNextPeriod = () => {
+    if (!localPeriodDate) return 28;
+    const today = new Date();
+    const start = new Date(localPeriodDate);
+    today.setHours(0,0,0,0);
+    start.setHours(0,0,0,0);
+    
+    const diffTime = today - start;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return 28;
+    
+    const currentDayInCycle = (diffDays % 28) + 1;
+    return 28 - currentDayInCycle + 1;
+  };
+
+  const daysUntilNextPeriod = getDaysUntilNextPeriod();
+
   const getDatesOfWeek = () => {
     const curr = new Date(selectedDate);
     const week = [];
@@ -111,14 +177,14 @@ const Home = ({ userName }) => {
   const weekDates = getDatesOfWeek();
   const weekDaysShort = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
 
-  // Статистика выбранного дня
-  const dailyGoalMinutes = 30; 
+  const defaultGoalMinutes = gender === 'female' ? 30 : 50;
+  const dailyGoalMinutes = currentCycleData ? currentCycleData.goal : defaultGoalMinutes; 
+  
   const todayActivities = activities.filter(a => a.date === selectedDate);
   const totalMinutesToday = todayActivities.reduce((sum, a) => sum + parseInt(a.duration || 0), 0);
   const goalProgress = Math.min((totalMinutesToday / dailyGoalMinutes) * 100, 100);
   const isGoalReached = totalMinutesToday >= dailyGoalMinutes;
 
-  // Расчет серии (стрика)
   const calculateStreak = () => {
     let streak = 0;
     let currDate = new Date();
@@ -148,7 +214,6 @@ const Home = ({ userName }) => {
 
   const currentStreak = calculateStreak();
 
-  // Логика клика по карточке "ЦЕЛЬ ДНЯ"
   const handleGoalClick = () => {
     if (isGoalAnimating) return;
     setIsGoalAnimating(true);
@@ -157,7 +222,6 @@ const Home = ({ userName }) => {
     }, 400);
   };
 
-  // ВЗРЫВ И ПОДСКАЗКИ
   const handleStreakClick = (e) => {
     if (isExploding || showZeroStreakMessage) return;
     
@@ -219,7 +283,6 @@ const Home = ({ userName }) => {
     }, 1100);
   };
 
-  // --- ЛОГИКА ПОЛНОГО КАЛЕНДАРЯ ---
   const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
   const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
@@ -256,6 +319,16 @@ const Home = ({ userName }) => {
     setCalendarMonth(parseInt(m, 10) - 1);
     setIsDatePickerOpen(true);
   };
+
+  // --- ИСПРАВЛЕНИЕ: Логика записи (сдвига) цикла ---
+  const handleLogPeriod = () => {
+    setLocalPeriodDate(selectedDate); // Берем выбранную дату из календаря
+    localStorage.setItem('periodDate', selectedDate);
+    setIsEditingCycle(false); // Выключаем режим редактирования
+  };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isToday = selectedDate === todayStr;
 
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
@@ -320,9 +393,17 @@ const Home = ({ userName }) => {
           100% { transform: scale(1); }
         }
         .animate-success-pop { animation: success-pop 0.4s ease-in-out; }
+
+        @keyframes pink-breathe {
+          0%, 100% { box-shadow: 0 0 5px rgba(236, 72, 153, 0.1); }
+          50% { box-shadow: 0 0 15px rgba(236, 72, 153, 0.35); }
+        }
+        .pink-glow-breathe {
+          animation: pink-breathe 2.5s infinite ease-in-out;
+        }
       `}</style>
 
-      {/* ШАПКА (ДИНАМИЧЕСКОЕ ПРИВЕТСТВИЕ) */}
+      {/* ШАПКА */}
       <div className="mb-8 text-left fade-in-up">
         <h2 className="text-3xl font-black bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent mb-1">
           {userName ? `Cześć, ${userName}!` : 'Cześć!'}
@@ -350,17 +431,22 @@ const Home = ({ userName }) => {
           {weekDates.map((dateObj, i) => {
             const dateStr = dateObj.toISOString().split('T')[0];
             const isSelected = dateStr === selectedDate;
-            const isToday = dateStr === new Date().toISOString().split('T')[0];
+            const isTodayBtn = dateStr === todayStr;
             
-            // ЛОГИКА ЦВЕТНЫХ ТОЧЕК (Умный прогресс)
             const dayActivitiesArr = activities.filter(a => a.date === dateStr);
-            const dayMinutes = dayActivitiesArr.reduce((sum, a) => sum + parseInt(a.duration || 0), 0);
             const hasActivity = dayActivitiesArr.length > 0;
-            const isDayGoalReached = dayMinutes >= dailyGoalMinutes;
+            
+            const dayCycle = getCycleData(dateStr, localPeriodDate);
+            const isPeriodDay = dayCycle && dayCycle.day >= 1 && dayCycle.day <= 7;
 
             let dotClass = "bg-purple-400";
-            if (isSelected) dotClass = "bg-white shadow-[0_0_5px_white]";
-            else if (isDayGoalReached) dotClass = "bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.6)]";
+            if (hasActivity) {
+              const defDayGoal = gender === 'female' ? 30 : 50; 
+              const dayGoal = dayCycle ? dayCycle.goal : defDayGoal;
+              const dayMinutes = dayActivitiesArr.reduce((sum, a) => sum + parseInt(a.duration || 0), 0);
+              if (isSelected) dotClass = "bg-white shadow-[0_0_5px_white]";
+              else if (dayMinutes >= dayGoal) dotClass = "bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.6)]";
+            }
 
             return (
               <button
@@ -369,11 +455,16 @@ const Home = ({ userName }) => {
                 className={`flex flex-col items-center justify-center w-11 h-16 rounded-2xl transition-all duration-300 relative active:scale-90 select-none focus:outline-none
                   ${isSelected 
                     ? 'bg-gradient-to-b from-fuchsia-500 to-purple-600 shadow-[0_0_15px_rgba(168,85,247,0.4)]' 
-                    : isToday 
+                    : isTodayBtn 
                       ? 'bg-purple-500/20 border border-purple-500/50' 
                       : 'hover:bg-white/5 border border-transparent'}
                 `}
               >
+                {/* РОЗОВАЯ ТОЧКА МЕСЯЧНЫХ */}
+                {isPeriodDay && (
+                  <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_5px_rgba(236,72,153,0.8)] animate-pulse"></div>
+                )}
+
                 <span className={`text-[10px] font-bold uppercase mb-1 select-none ${isSelected ? 'text-purple-100' : 'text-purple-400/60'}`}>
                   {weekDaysShort[i]}
                 </span>
@@ -390,21 +481,88 @@ const Home = ({ userName }) => {
         </div>
       </div>
 
-      {/* ВИДЖЕТ ЖЕНСКОГО ЦИКЛА */}
-      <div className="bg-[#13072E]/40 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-3 mb-6 shadow-inner flex items-center justify-between fade-in-up cursor-pointer hover:bg-[#13072E]/60 transition-colors" style={{ animationDelay: '0.15s' }}>
-        <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl bg-[#0B0316]/50 shadow-inner ${phaseColor}`}>
-            <PhaseIcon size={18} />
-          </div>
-          <div>
-            <h4 className="text-[11px] font-bold text-white uppercase tracking-wider mb-0.5">
-              {phaseName} <span className="text-purple-400/60 ml-1">Dzień {cycleDay}</span>
-            </h4>
-            <p className="text-[10px] text-purple-300/70 font-medium">{phaseAdvice}</p>
-          </div>
+      {/* --- БЛОК С ЖЕНСКИМ ЦИКЛОМ (Показывается только если gender === 'female') --- */}
+      {gender === 'female' && (
+        <div className="mb-6 flex flex-col items-center w-full fade-in-up" style={{ animationDelay: '0.15s' }}>
+          
+          {/* КАРТОЧКА ВИДЖЕТА (Либо реальные данные, либо режим Ожидания) */}
+          {currentCycleData ? (
+            <div 
+              onClick={() => setIsCycleModalOpen(true)}
+              className="w-full bg-[#13072E]/40 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-3 shadow-inner flex items-center justify-between cursor-pointer hover:bg-[#13072E]/60 hover:border-pink-500/30 transition-all group" 
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl ${currentCycleData.bg} ${currentCycleData.color} shadow-inner`}>
+                  <currentCycleData.icon size={18} />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold text-white uppercase tracking-wider mb-0.5 group-hover:text-pink-100 transition-colors">
+                    {currentCycleData.name} <span className="text-purple-400/60 ml-1">Dzień {currentCycleData.day}</span>
+                  </h4>
+                  <p className="text-[10px] text-purple-300/70 font-medium line-clamp-1">{currentCycleData.advice}</p>
+                </div>
+              </div>
+              <ChevronRight size={18} className="text-purple-500/30 group-hover:text-pink-400 transition-colors" />
+            </div>
+          ) : (
+            <div className="w-full bg-[#13072E]/40 backdrop-blur-xl border border-purple-500/20 rounded-2xl p-3 shadow-inner flex items-center justify-between select-none opacity-80">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-pink-500/10 text-pink-400/50 shadow-inner">
+                  <Flower2 size={18} />
+                </div>
+                <div>
+                  <h4 className="text-[11px] font-bold text-white uppercase tracking-wider mb-0.5">
+                    Cykl menstruacyjny
+                  </h4>
+                  <p className="text-[10px] text-purple-300/60 font-medium line-clamp-1">Brak danych. Zaznacz dzień startu poniżej.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ИСПРАВЛЕНИЕ: УМНАЯ КНОПКА С РЕЖИМОМ РЕДАКТИРОВАНИЯ */}
+          {!localPeriodDate || isEditingCycle ? (
+            // РЕЖИМ 1: ВЫБОР ДАТЫ (Срабатывает, если нет данных ИЛИ если нажали "Крестик")
+            <button
+              onClick={handleLogPeriod}
+              className="mt-3 px-4 py-3 w-[90%] sm:w-[80%] bg-pink-500/10 border border-pink-500/30 text-pink-400 hover:text-pink-200 hover:bg-pink-500/20 text-[10.5px] font-black tracking-widest uppercase rounded-2xl active:scale-95 transition-all duration-300 focus:outline-none flex items-center justify-center gap-2 pink-glow-breathe"
+            >
+              <Droplet size={16} className="animate-pulse" />
+              <span>Miesiączka zaczęła się {isToday ? 'dzisiaj' : 'w tym dniu'}</span>
+            </button>
+          ) : (
+            // РЕЖИМ 2: ПРОСМОТР И ПЕРЕХОД В РЕДАКТИРОВАНИЕ (Разделенная кнопка)
+            <div className="mt-3 w-[90%] sm:w-[80%] flex h-11 rounded-2xl border border-pink-500/30 bg-pink-500/10 overflow-hidden pink-glow-breathe transition-all">
+              
+              {/* Левая часть: Инфо */}
+              <div className="flex-1 flex items-center justify-center px-1 sm:px-2 text-pink-400 text-[8.5px] sm:text-[10px] font-black tracking-widest uppercase text-center leading-none whitespace-nowrap">
+                {currentCycleData && currentCycleData.day <= 7 ? (
+                  <span className="flex items-center gap-1.5 sm:gap-2">
+                    <span>Miesiączka: {8 - currentCycleData.day} {8 - currentCycleData.day === 1 ? 'dzień' : 'dni'}</span>
+                    <span className="opacity-40">|</span>
+                    <span className="text-pink-500/80">Następna za {daysUntilNextPeriod} dni</span>
+                  </span>
+                ) : (
+                  <span>Następna za {daysUntilNextPeriod} dni</span>
+                )}
+              </div>
+              
+              {/* Полоска-разделитель */}
+              <div className="w-px bg-pink-500/30"></div>
+              
+              {/* Правая часть: Кнопка перехода в режим редактирования (Крестик) */}
+              <button 
+                onClick={() => setIsEditingCycle(true)}
+                className="w-14 flex items-center justify-center text-pink-400 hover:text-white hover:bg-pink-500/30 transition-colors focus:outline-none"
+              >
+                <X size={16} strokeWidth={3} />
+              </button>
+              
+            </div>
+          )}
+          
         </div>
-        <ChevronRight size={18} className="text-purple-500/30" />
-      </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 mb-8 fade-in-up" style={{ animationDelay: '0.2s' }}>
         
@@ -417,7 +575,7 @@ const Home = ({ userName }) => {
               : 'hover:bg-[#13072E]/60 shadow-inner'}
           `}
         >
-          <span className="text-xs font-bold text-purple-200 tracking-wider uppercase mb-3 flex items-center gap-1.5 z-10">
+          <span className="text-xs font-bold text-purple-200 tracking-wider uppercase mb-3 flex items-center gap-1.5 z-10 text-center">
             <Clock size={14} className={isGoalReached ? 'text-emerald-400' : 'text-indigo-400'}/> Cel Dnia
           </span>
           <div className="relative flex items-center justify-center w-24 h-24">
@@ -430,11 +588,11 @@ const Home = ({ userName }) => {
                 style={{ filter: `drop-shadow(0px 0px 8px ${isGoalReached ? 'rgba(52,211,153,0.7)' : 'rgba(217,70,239,0.7)'})` }}
               />
             </svg>
-            <div className="absolute flex flex-col items-center justify-center">
-              <span className={`text-xl font-black transition-colors duration-500 ${isGoalReached ? 'text-emerald-400' : 'text-white'}`}>
+            <div className="absolute flex flex-col items-center justify-center mt-0.5">
+              <span className={`text-xl font-black transition-colors duration-500 leading-none ${isGoalReached ? 'text-emerald-400' : 'text-white'}`}>
                 {totalMinutesToday}
               </span>
-              <span className="text-[9px] font-bold text-purple-400 uppercase">/ {dailyGoalMinutes} min</span>
+              <span className="text-[9px] font-bold text-purple-400 uppercase mt-1">/ {dailyGoalMinutes} min</span>
             </div>
           </div>
           {isGoalReached && (
@@ -481,9 +639,8 @@ const Home = ({ userName }) => {
 
         <div className="space-y-3">
           {todayActivities.length === 0 ? (
-            // КЛИКАБЕЛЬНОЕ ПУСТОЕ СОСТОЯНИЕ
             <button 
-              onClick={() => navigate('/add')} // Заглушка перехода
+              onClick={() => navigate('/add')} 
               className="w-full bg-[#13072E]/30 border border-purple-500/30 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center text-center shadow-inner hover:bg-[#13072E]/60 hover:border-purple-500/50 transition-all active:scale-95 group focus:outline-none"
             >
               <div className="w-14 h-14 rounded-full bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
@@ -539,6 +696,62 @@ const Home = ({ userName }) => {
           )}
         </div>
       </div>
+
+      {/* --- МОДАЛЬНОЕ ОКНО "ПОДРОБНОСТИ ЦИКЛА" --- */}
+      {isCycleModalOpen && currentCycleData && (
+        <div className="fixed inset-0 z-[130] flex items-end sm:items-center justify-center bg-[#0B0316]/90 backdrop-blur-md transition-all duration-300">
+          <div className="bg-[#13072E] border-t sm:border border-purple-500/40 rounded-t-[2rem] sm:rounded-[2rem] p-6 w-full max-w-md shadow-[0_-20px_60px_rgba(168,85,247,0.2)] animate-modal-pop">
+            
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-4">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${currentCycleData.bg} ${currentCycleData.color} shadow-inner`}>
+                  <currentCycleData.icon size={28} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-white leading-tight">{currentCycleData.name}</h3>
+                  <p className="text-sm font-bold text-purple-400/80">Dzień {currentCycleData.day} cyklu</p>
+                </div>
+              </div>
+              <button onClick={() => setIsCycleModalOpen(false)} className="text-purple-400 hover:text-white transition-colors p-2 bg-white/5 rounded-full focus:outline-none">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-6">
+              <div className="bg-[#0B0316]/60 border border-purple-500/10 rounded-2xl p-4 flex gap-3">
+                <Battery size={20} className={currentCycleData.color} />
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">Poziom energii</p>
+                  <p className="text-sm text-white font-medium">{currentCycleData.energy}</p>
+                </div>
+              </div>
+
+              <div className="bg-[#0B0316]/60 border border-purple-500/10 rounded-2xl p-4 flex gap-3">
+                <Dumbbell size={20} className="text-fuchsia-400" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">Trening (Cel: {currentCycleData.goal} min)</p>
+                  <p className="text-sm text-white font-medium leading-snug">{currentCycleData.advice}</p>
+                </div>
+              </div>
+
+              <div className="bg-[#0B0316]/60 border border-purple-500/10 rounded-2xl p-4 flex gap-3">
+                <Apple size={20} className="text-emerald-400" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">Odżywianie</p>
+                  <p className="text-sm text-white font-medium leading-snug">{currentCycleData.nutrition}</p>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setIsCycleModalOpen(false)} 
+              className="w-full py-3.5 bg-purple-500/10 text-purple-300 font-bold tracking-widest uppercase rounded-2xl hover:bg-purple-500/20 active:scale-95 transition-all focus:outline-none"
+            >
+              Zamknij
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* --- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ АКТИВНОСТИ --- */}
       {selectedActivityItem && (
@@ -633,11 +846,15 @@ const Home = ({ userName }) => {
                 const todayObj = new Date();
                 const isToday = todayObj.getDate() === dayNumber && todayObj.getMonth() === calendarMonth && todayObj.getFullYear() === calendarYear;
                 
-                // ЛОГИКА ЦВЕТНЫХ ТОЧЕК В БОЛЬШОМ КАЛЕНДАРЕ
                 const dayActivitiesArr = activities.filter(a => a.date === dString);
                 const dayMinutes = dayActivitiesArr.reduce((sum, a) => sum + parseInt(a.duration || 0), 0);
                 const hasActivity = dayActivitiesArr.length > 0;
-                const isDayGoalReached = dayMinutes >= dailyGoalMinutes;
+                
+                const dayCycle = getCycleData(dString, localPeriodDate);
+                const isPeriodDay = dayCycle && dayCycle.day >= 1 && dayCycle.day <= 7;
+                const defaultDayGoal = gender === 'female' ? 30 : 50; 
+                const dayGoal = dayCycle ? dayCycle.goal : defaultDayGoal;
+                const isDayGoalReached = dayMinutes >= dayGoal;
 
                 return (
                   <button
@@ -653,7 +870,12 @@ const Home = ({ userName }) => {
                       }
                     `}
                   >
+                    {isPeriodDay && (
+                      <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_5px_rgba(236,72,153,0.8)] animate-pulse"></div>
+                    )}
+                    
                     {dayNumber}
+                    
                     {hasActivity && !isSelected && (
                       <span className={`absolute bottom-[2px] w-1 h-1 rounded-full ${isDayGoalReached ? 'bg-emerald-400' : 'bg-purple-400'}`}></span>
                     )}
@@ -679,7 +901,7 @@ const Home = ({ userName }) => {
         </div>
       )}
 
-      {/* АНИМАЦИЯ ПОДСКАЗКИ */}
+      {/* АНИМАЦИЯ ПОДСКАЗКИ СЕРИИ */}
       {showZeroStreakMessage && (
         <div 
           className="fixed z-[9999] pointer-events-none left-0 right-0 w-full flex justify-center px-4"
