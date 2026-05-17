@@ -15,13 +15,13 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-[#0B0316] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(107,33,168,0.25),rgba(11,3,22,1))] text-slate-100 font-sans pb-28">
+      {/* ФИКС БЕЛОЙ РАМКИ: 
+        Добавлены классы w-full и overflow-x-hidden. 
+        Они запрещают странице скроллиться по горизонтали, отсекая любые вылезающие элементы!
+      */}
+      <div className="min-h-screen w-full overflow-x-hidden bg-[#0B0316] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(107,33,168,0.25),rgba(11,3,22,1))] text-slate-100 font-sans pb-28">
         
-        <header className="bg-[#13072E]/60 backdrop-blur-md border-b border-purple-900/50 px-4 py-4 sticky top-0 z-40">
-          <h1 className="text-xl font-black bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent text-center tracking-widest uppercase drop-shadow-sm">
-            FitTrack
-          </h1>
-        </header>
+        {/* Шапка FITTRACK удалена отсюда */}
 
         <main className="max-w-xl mx-auto mt-6 px-4">
           <Routes>
