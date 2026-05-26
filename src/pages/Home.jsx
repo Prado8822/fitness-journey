@@ -11,7 +11,7 @@ const Home = ({ userName, gender, periodDate }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Локальный стэйт для даты цикла
-  const [localPeriodDate, setLocalPeriodDate] = useState(periodDate);
+ const [localPeriodDate, setLocalPeriodDate] = useState(() => localStorage.getItem('periodDate') || periodDate || '');
 
   // НОВЫЙ СТЭЙТ: Режим редактирования даты (чтобы не удалять всё из памяти)
   const [isEditingCycle, setIsEditingCycle] = useState(false);
@@ -40,7 +40,8 @@ const Home = ({ userName, gender, periodDate }) => {
   }, []);
 
   useEffect(() => {
-    setLocalPeriodDate(periodDate);
+    // Надежная синхронизация: всегда берем самую свежую дату из памяти телефона
+    setLocalPeriodDate(localStorage.getItem('periodDate') || '');
   }, [periodDate]);
 
   const activityTypes = [
@@ -185,30 +186,33 @@ const Home = ({ userName, gender, periodDate }) => {
   const goalProgress = Math.min((totalMinutesToday / dailyGoalMinutes) * 100, 100);
   const isGoalReached = totalMinutesToday >= dailyGoalMinutes;
 
-  const calculateStreak = () => {
-    let streak = 0;
-    let currDate = new Date();
-    
-    const todayStr = currDate.toISOString().split('T')[0];
-    const hasWorkoutToday = activities.some(a => a.date === todayStr);
+ const calculateStreak = () => {
+    if (!activities || activities.length === 0) return 0;
 
-    if (!hasWorkoutToday) {
-      currDate.setDate(currDate.getDate() - 1);
-      const yesterdayStr = currDate.toISOString().split('T')[0];
-      if (!activities.some(a => a.date === yesterdayStr)) {
-        return 0; 
-      }
-    }
+    // Собираем все уникальные даты тренировок и сортируем их по порядку
+    const uniqueDates = [...new Set(activities.map(a => a.date))].sort();
+
+    // Берем самую "дальнюю" дату из тех, что ты накликал (даже если это завтра или послезавтра)
+    const latestDateStr = uniqueDates[uniqueDates.length - 1];
+    
+    let currDate = new Date(latestDateStr);
+    let streak = 0;
 
     while (true) {
-      const dStr = currDate.toISOString().split('T')[0];
-      if (activities.some(a => a.date === dStr)) {
+      // Собираем чистую локальную дату без багов часовых поясов
+      const year = currDate.getFullYear();
+      const month = String(currDate.getMonth() + 1).padStart(2, '0');
+      const day = String(currDate.getDate()).padStart(2, '0');
+      const checkStr = `${year}-${month}-${day}`;
+
+      if (uniqueDates.includes(checkStr)) {
         streak++;
-        currDate.setDate(currDate.getDate() - 1);
+        currDate.setDate(currDate.getDate() - 1); // Шагаем ровно на 1 день назад
       } else {
-        break;
+        break; // Цепочка прервалась
       }
     }
+
     return streak;
   };
 

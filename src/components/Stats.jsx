@@ -5,7 +5,8 @@ const Stats = ({ data }) => {
   return (
     <div className="h-64">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+        {/* Увеличили top до 25, чтобы цифры над столбиками не обрезались */}
+        <BarChart data={data} margin={{ top: 25, right: 10, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="colorDuration" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#d946ef" stopOpacity={1}/>
@@ -40,9 +41,11 @@ const Stats = ({ data }) => {
           <Bar 
             dataKey="duration" 
             fill="url(#colorDuration)" 
-            radius={[6, 6, 0, 0]} 
+            radius={[16, 16, 0, 0]} // Сильное закругление (капсула)
             barSize={32}
             style={{ filter: 'drop-shadow(0px 0px 8px rgba(217,70,239,0.4))' }}
+            // Добавляем цифры над столбиками
+            label={{ position: 'top', fill: '#f8fafc', fontSize: 12, fontWeight: 'bold' }} 
           />
         </BarChart>
       </ResponsiveContainer>
