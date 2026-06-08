@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { Home as HomeIcon, Plus, BarChart2, Target, Settings, X, Sparkles } from 'lucide-react';
+import { 
+  Home as HomeIcon, Plus, BarChart2, Target, Settings, X, Sparkles, 
+  Download, ShieldCheck, Upload, Trash2, Globe, User, Ruler, Weight, 
+  HeartPulse, ChevronRight, FileJson, Calendar
+} from 'lucide-react';
+import localforage from 'localforage';
 
 import Home from './pages/Home.jsx';
 import AddActivity from './pages/AddActivity.jsx';
 import StatsPage from './pages/StatsPage.jsx';
 import GoalsPage from './pages/GoalsPage.jsx';
 
-// --- ИСПРАВЛЕНИЕ ПРОКРУТКИ: Компонент, который всегда кидает в начало страницы ---
 const ScrollToTop = () => {
   const { pathname } = useLocation();
 
@@ -19,111 +23,273 @@ const ScrollToTop = () => {
 };
 
 function App() {
-  // ГЛОБАЛЬНЫЕ СТЭЙТЫ НАСТРОЕК
+  // --- ГЛОБАЛЬНЫЕ СТЭЙТЫ ---
   const [userName, setUserName] = useState('');
+  
+  // Стейты для плавного открытия/закрытия настроек
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [tempName, setTempName] = useState('');
+  const [isSettingsClosing, setIsSettingsClosing] = useState(false);
+  
+  const [lang, setLang] = useState('pl');
 
-  // --- НОВЫЕ СТЭЙТЫ: ПОЛ И ЦИКЛ ---
-  const [gender, setGender] = useState(''); // 'male' или 'female'
-  const [tempGender, setTempGender] = useState('');
+  // --- ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ---
+  const [gender, setGender] = useState('');
   const [periodDate, setPeriodDate] = useState('');
-  const [tempPeriodDate, setTempPeriodDate] = useState('');
+  const [age, setAge] = useState('');
+  const [height, setHeight] = useState('');
+  const [weight, setWeight] = useState('');
+  const [useBiometrics, setUseBiometrics] = useState(false);
 
-  // --- НОВЫЙ СТЭЙТ ДЛЯ ПРИВЕТСТВЕННОГО ОКНА ---
+  // --- ОНБОРДИНГ ---
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
-  // Загружаем данные при старте приложения
+  const fileInputRef = useRef(null);
+
   useEffect(() => {
-    const storedName = localStorage.getItem('userName');
-    if (storedName) {
-      setUserName(storedName);
-      setTempName(storedName);
-    }
+    const loadSettings = async () => {
+      const storedLang = await localforage.getItem('appLanguage');
+      if (storedLang) setLang(storedLang);
 
-    const storedGender = localStorage.getItem('userGender');
-    if (storedGender) {
-      setGender(storedGender);
-      setTempGender(storedGender);
-    }
-    
-    // ИСПРАВЛЕНИЕ: Окно показывается ВСЕГДА при каждом запуске/обновлении
-    setShowWelcomeModal(true);
+      const storedName = await localforage.getItem('userName');
+      if (storedName) setUserName(storedName);
 
-    const storedPeriod = localStorage.getItem('periodDate');
-    if (storedPeriod) {
-      setPeriodDate(storedPeriod);
-      setTempPeriodDate(storedPeriod);
-    }
+      const storedGender = await localforage.getItem('userGender');
+      if (storedGender) setGender(storedGender); 
+      else setShowWelcomeModal(true);
+      
+      const storedPeriod = await localforage.getItem('periodDate');
+      if (storedPeriod) setPeriodDate(storedPeriod);
+
+      const storedAge = await localforage.getItem('userAge');
+      if (storedAge) setAge(storedAge);
+
+      const storedHeight = await localforage.getItem('userHeight');
+      if (storedHeight) setHeight(storedHeight);
+
+      const storedWeight = await localforage.getItem('userWeight');
+      if (storedWeight) setWeight(storedWeight);
+
+      const storedBiometrics = await localforage.getItem('useBiometrics');
+      if (storedBiometrics === 'true') setUseBiometrics(true);
+    };
+
+    loadSettings();
   }, []);
 
-  // --- ЛОГИКА ОНБОРДИНГА ---
-  const handleWelcomeChoice = (selectedGender) => {
-    setGender(selectedGender);
-    setTempGender(selectedGender);
-    localStorage.setItem('userGender', selectedGender);
+  // --- ФУНКЦИЯ ЗАКРЫТИЯ С АНИМАЦИЕЙ ---
+  const closeSettings = () => {
+    setIsSettingsClosing(true);
+    setTimeout(() => {
+      setIsSettingsOpen(false);
+      setIsSettingsClosing(false);
+    }, 300); // Время совпадает с длительностью CSS анимации
+  };
 
-    // Если при входе выбрали "Мужчину" (или нажали крестик), 
-    // сразу зачищаем память от женского цикла, чтобы не было багов.
+  // --- МГНОВЕННОЕ СОХРАНЕНИЕ ---
+  const handleUpdate = async (key, value, setter) => {
+    setter(value);
+    if (value === '' || value === null) {
+      await localforage.removeItem(key);
+    } else {
+      await localforage.setItem(key, value.toString());
+    }
+  };
+
+  const handleGenderChange = async (selectedGender) => {
+    setGender(selectedGender);
+    await localforage.setItem('userGender', selectedGender);
     if (selectedGender !== 'female') {
       setPeriodDate('');
-      setTempPeriodDate('');
-      localStorage.removeItem('periodDate');
-      localStorage.removeItem('backupPeriodDate');
+      await localforage.removeItem('periodDate');
+      await localforage.removeItem('backupPeriodDate');
     }
+  };
 
+  const t = {
+    pl: {
+      settingsTitle: "Ustawienia",
+      profile: "PROFIL",
+      params: "PARAMETRY FIZYCZNE",
+      lang: "Język",
+      name: "Imię",
+      age: "Wiek",
+      height: "Wzrost",
+      weight: "Waga",
+      gender: "Płeć",
+      female: "Kobieta",
+      male: "Mężczyzna",
+      sec: "BEZPIECZEŃSTWO",
+      bio: "Face ID / Touch ID",
+      data: "DANE APLIKACJI",
+      backupDownload: "Eksport",
+      backupDownloadDesc: "Pobierz plik JSON",
+      backupUpload: "Import",
+      backupUploadDesc: "Przywróć dane z pliku",
+      danger: "NIEBEZPIECZNA STREFA",
+      resetData: "Skasuj wszystkie dane",
+      localInfo: "Dane są zapisywane lokalnie na urządzeniu",
+      confirmReset: "Czy na pewno chcesz usunąć WSZYSTKIE dane? Tej operacji nie można cofnąć.",
+      importSuccess: "Dane zostały pomyślnie wczytane!",
+      importError: "Błąd podczas ładowania pliku."
+    },
+    en: {
+      settingsTitle: "Settings",
+      profile: "PROFILE",
+      params: "PHYSICAL PARAMS",
+      lang: "Language",
+      name: "Name",
+      age: "Age",
+      height: "Height",
+      weight: "Weight",
+      gender: "Gender",
+      female: "Female",
+      male: "Male",
+      sec: "SECURITY",
+      bio: "Face ID / Touch ID",
+      data: "APP DATA",
+      backupDownload: "Export",
+      backupDownloadDesc: "Download JSON file",
+      backupUpload: "Import",
+      backupUploadDesc: "Restore from file",
+      danger: "DANGER ZONE",
+      resetData: "Reset all data",
+      localInfo: "Data is stored locally on your device",
+      confirmReset: "Are you sure you want to delete ALL data? This cannot be undone.",
+      importSuccess: "Data imported successfully!",
+      importError: "Error loading file."
+    },
+    uk: {
+      settingsTitle: "Налаштування",
+      profile: "ПРОФІЛЬ",
+      params: "ФІЗИЧНІ ПАРАМЕТРИ",
+      lang: "Мова",
+      name: "Ім'я",
+      age: "Вік",
+      height: "Зріст",
+      weight: "Вага",
+      gender: "Стать",
+      female: "Жіноча",
+      male: "Чоловіча",
+      sec: "БЕЗПЕКА",
+      bio: "Face ID / Touch ID",
+      data: "ДАНІ ДОДАТКУ",
+      backupDownload: "Експорт",
+      backupDownloadDesc: "Завантажити JSON файл",
+      backupUpload: "Імпорт",
+      backupUploadDesc: "Відновити з файлу",
+      danger: "НЕБЕЗПЕЧНА ЗОНА",
+      resetData: "Скинути всі дані",
+      localInfo: "Дані зберігаються локально на пристрої",
+      confirmReset: "Ви впевнені, що хочете видалити ВСІ дані? Цю дію неможливо скасувати.",
+      importSuccess: "Дані успішно імпортовано!",
+      importError: "Помилка завантаження файлу."
+    }
+  };
+
+  const handleWelcomeChoice = async (selectedGender) => {
+    await handleGenderChange(selectedGender);
     setShowWelcomeModal(false);
   };
 
-  // Сохраняем все настройки
-  const saveSettings = () => {
-    // Сохраняем имя
-    setUserName(tempName);
-    if (tempName.trim() === '') {
-      localStorage.removeItem('userName');
-    } else {
-      localStorage.setItem('userName', tempName);
+  const handleExportData = async () => {
+    try {
+      const activities = (await localforage.getItem('activities')) || [];
+      const exportObject = {
+        profile: { userName, gender, age, height, weight, periodDate, lang },
+        activities: activities,
+        exportDate: new Date().toISOString()
+      };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObject, null, 2));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", "Fitness_Backup.json");
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    } catch (error) {
+      alert(t[lang].importError);
     }
+  };
 
-    // Сохраняем пол
-    setGender(tempGender);
-    if (tempGender) {
-      localStorage.setItem('userGender', tempGender);
-    } else {
-      localStorage.removeItem('userGender');
+  const handleImportData = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const importedData = JSON.parse(event.target.result);
+        if (importedData.profile) {
+          if (importedData.profile.userName) await localforage.setItem('userName', importedData.profile.userName);
+          if (importedData.profile.gender) await localforage.setItem('userGender', importedData.profile.gender);
+          if (importedData.profile.age) await localforage.setItem('userAge', importedData.profile.age);
+          if (importedData.profile.height) await localforage.setItem('userHeight', importedData.profile.height);
+          if (importedData.profile.weight) await localforage.setItem('userWeight', importedData.profile.weight);
+          if (importedData.profile.periodDate) await localforage.setItem('periodDate', importedData.profile.periodDate);
+          if (importedData.profile.lang) await localforage.setItem('appLanguage', importedData.profile.lang);
+        }
+        if (importedData.activities) {
+          await localforage.setItem('activities', importedData.activities);
+        }
+        alert(t[lang].importSuccess);
+        window.location.reload(); 
+      } catch (error) {
+        alert(t[lang].importError);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleResetData = async () => {
+    if (window.confirm(t[lang].confirmReset)) {
+      await localforage.clear();
+      window.location.reload();
     }
-
-    // ВАЖНАЯ ФУНКЦИЯ: Если выбран мужчина или пол не выбран, 
-    // мы полностью очищаем память от женского цикла!
-    if (tempGender !== 'female') {
-      setPeriodDate('');
-      setTempPeriodDate('');
-      localStorage.removeItem('periodDate');
-      localStorage.removeItem('backupPeriodDate'); // на всякий случай очищаем и бэкап
-    }
-
-    setIsSettingsOpen(false);
   };
 
   const navLinkClass = ({ isActive }) =>
-    `flex flex-col items-center justify-center w-full space-y-1 transition-all duration-300 ${
+    `flex flex-col items-center justify-center w-16 shrink-0 space-y-1 transition-all duration-300 ${
       isActive ? 'text-purple-400 drop-shadow-[0_0_6px_rgba(168,85,247,0.4)]' : 'text-slate-500 hover:text-purple-300'
     }`;
 
-  // Получаем periodDate напрямую из localStorage для передачи в Home (так как стэйт теперь управляется там)
-  const currentPeriodDate = localStorage.getItem('periodDate') || '';
+  // Стили для строк и красивых инпутов
+  const rowClass = "flex items-center justify-between p-4 bg-[#13072E]/60 border-b border-white/5 last:border-none transition-colors";
+  const inputClass = "bg-[#0B0316]/80 border border-white/10 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all placeholder-white/20 text-center shadow-inner";
 
   return (
     <Router>
       <ScrollToTop />
       
-      <div className="min-h-screen w-full overflow-x-hidden bg-[#0B0316] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(107,33,168,0.25),rgba(11,3,22,1))] text-slate-100 font-sans pb-28">
+      <div className="min-h-screen w-full overflow-x-hidden bg-[#0B0316] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(107,33,168,0.25),rgba(11,3,22,1))] text-slate-100 font-sans pb-28 relative">
         
         <style>{`
           .animate-modal-pop { animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
           @keyframes modalPop { from { transform: scale(0.95) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+          
+          /* Анимации для выдвижного меню */
+          .animate-slide-in-left { animation: slideInLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+          .animate-slide-out-left { animation: slideOutLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+          @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+          @keyframes slideOutLeft { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+
+          /* Анимации для затемнения фона */
+          .animate-fade-in { animation: fadeIn 0.35s ease-out forwards; }
+          .animate-fade-out { animation: fadeOut 0.3s ease-in forwards; }
+          @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+
           .group:hover .rotate-gear { animation: spin-slow 3s linear infinite; }
           @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+
+          /* УБИРАЕМ СТРЕЛОЧКИ У INPUT TYPE NUMBER */
+          input[type="number"]::-webkit-outer-spin-button,
+          input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+          }
+          input[type="number"] {
+            -moz-appearance: textfield; /* Firefox */
+          }
         `}</style>
 
         <header className="max-w-xl mx-auto pt-6 px-4 relative z-40">
@@ -137,27 +303,31 @@ function App() {
 
         <main className="max-w-xl mx-auto mt-2 px-4">
           <Routes>
-            {/* ИСПРАВЛЕНИЕ: Передаем пол и дату в Home */}
-            <Route path="/" element={<Home userName={userName} gender={gender} periodDate={currentPeriodDate} />} />
-            <Route path="/add" element={<AddActivity />} />
-            <Route path="/stats" element={<StatsPage />} />
-            <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/" element={<Home userName={userName} gender={gender} periodDate={periodDate} lang={lang} />} />
+            <Route path="/add" element={<AddActivity lang={lang} />} />
+            <Route path="/stats" element={<StatsPage lang={lang} />} />
+            <Route path="/goals" element={<GoalsPage lang={lang} />} />
           </Routes>
         </main>
 
-        <nav className="fixed bottom-0 left-0 w-full bg-[#13072E]/80 backdrop-blur-xl border-t border-purple-900/50 pb-safe z-50">
-          <div className="flex justify-between items-center max-w-xl mx-auto px-6 h-20 relative">
+        <nav 
+          className="fixed bottom-0 left-0 w-full bg-[#13072E]/80 backdrop-blur-xl border-t border-purple-900/50 z-50"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          <div className="flex justify-center items-center gap-6 sm:gap-10 max-w-xl mx-auto px-4 py-4 relative">
             <NavLink to="/" className={navLinkClass}>
               <HomeIcon size={24} strokeWidth={2} />
               <span className="text-[10px] font-semibold uppercase tracking-widest mt-1">Główna</span>
             </NavLink>
             
-            <NavLink to="/add" className="relative group -top-6">
-              <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-purple-600 to-indigo-600 text-white rounded-full shadow-[0_4px_15px_rgba(147,51,234,0.4)] transform transition-all duration-300 group-hover:scale-105 group-active:scale-95 border border-purple-500/30">
-                <Plus size={28} strokeWidth={2.5} />
-              </div>
-            </NavLink>
-            
+            <div className="relative w-14 flex justify-center shrink-0">
+              <NavLink to="/add" className="absolute -top-11 group">
+                <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-purple-600 to-indigo-600 text-white rounded-full shadow-[0_4px_15px_rgba(147,51,234,0.4)] transform transition-all duration-300 group-hover:scale-105 group-active:scale-95 border border-purple-500/30">
+                  <Plus size={28} strokeWidth={2.5} />
+                </div>
+              </NavLink>
+            </div>
+
             <NavLink to="/stats" className={navLinkClass}>
               <BarChart2 size={24} strokeWidth={2} />
               <span className="text-[10px] font-semibold uppercase tracking-widest mt-1">Statystyki</span>
@@ -170,122 +340,242 @@ function App() {
           </div>
         </nav>
 
-        {/* --- ГЛОБАЛЬНОЕ МОДАЛЬНОЕ ОКНО НАСТРОЕК --- */}
-        {isSettingsOpen && (
-          <div className="fixed inset-0 z-[150] flex items-center justify-center px-4 bg-[#0B0316]/90 backdrop-blur-md transition-all duration-300">
-            <div className="bg-[#13072E] border border-purple-500/40 rounded-[2rem] p-6 w-full max-w-sm shadow-[0_0_60px_rgba(168,85,247,0.3)] relative animate-modal-pop text-center max-h-[90vh] overflow-y-auto">
-              
-              <button type="button" onClick={() => setIsSettingsOpen(false)} className="absolute top-4 right-4 text-purple-400 hover:text-white transition-colors p-2 bg-white/5 rounded-full z-10 focus:outline-none">
-                <X size={20} />
-              </button>
+        {/* --- ВЫДВИЖНОЕ ОКНО НАСТРОЕК (SIDE DRAWER) --- */}
+        {(isSettingsOpen || isSettingsClosing) && (
+          <div className="fixed inset-0 z-[150] flex">
+            {/* Затемнение фона */}
+            <div 
+              className={`absolute inset-0 bg-[#0B0316]/70 backdrop-blur-sm ${isSettingsClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
+              onClick={closeSettings}
+            ></div>
 
-              <div className="w-16 h-16 mx-auto bg-gradient-to-tr from-fuchsia-500 to-purple-600 rounded-full flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(168,85,247,0.4)] mt-2">
-                <Settings size={28} className="text-white" />
+            {/* Сама панель слева */}
+            <div className={`relative w-[85%] max-w-sm h-full bg-[#0B0316] border-r border-purple-500/30 shadow-[20px_0_60px_rgba(168,85,247,0.2)] flex flex-col overflow-y-auto ${isSettingsClosing ? 'animate-slide-out-left' : 'animate-slide-in-left'}`}>
+              
+              <div className="p-6 pb-2 border-b border-purple-500/20 bg-[#13072E]/40 sticky top-0 z-10 backdrop-blur-md flex items-center justify-between">
+                <h3 className="text-xl font-black text-white">{t[lang].settingsTitle}</h3>
+                <button type="button" onClick={closeSettings} className="text-purple-400 hover:text-white transition-colors p-2 bg-white/5 rounded-full focus:outline-none active:scale-90">
+                  <X size={20} />
+                </button>
               </div>
-              
-              <h3 className="text-2xl font-black text-white mb-6">Ustawienia</h3>
-              
-              {/* ПОЛЕ: ИМЯ */}
-              <div className="text-left mb-5">
-                <label className="block text-xs font-bold text-purple-300/70 uppercase tracking-widest mb-2 ml-1">
-                  Jak masz na imię?
-                </label>
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    value={tempName}
-                    onChange={(e) => setTempName(e.target.value)}
-                    placeholder="Wpisz imię..."
-                    className="w-full bg-[#0B0316]/60 border border-purple-500/30 rounded-2xl pl-4 pr-12 py-3 text-white placeholder-purple-400/30 focus:outline-none focus:border-fuchsia-400 focus:ring-1 focus:ring-fuchsia-400 transition-all"
-                  />
-                  {tempName && (
-                    <button 
-                      onClick={() => {
-                        setTempName('');
-                        setUserName('');
-                        localStorage.removeItem('userName');
-                      }}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-red-500/80 hover:text-red-400 transition-colors p-1 focus:outline-none"
-                    >
-                      <X size={20} strokeWidth={3} />
+
+              <div className="p-5 flex-1 space-y-6">
+                
+                {/* --- СЕКЦИЯ: ПРОФИЛЬ --- */}
+                <div>
+                  <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
+                    {t[lang].profile}
+                  </span>
+                  <div className="bg-[#13072E]/40 border border-purple-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
+                    
+                    {/* Язык (Красивый переключатель) */}
+                    <div className={rowClass}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center"><Globe size={16} /></div>
+                        <span className="text-sm font-medium">{t[lang].lang}</span>
+                      </div>
+                      <div className="flex bg-[#0B0316]/80 p-1 rounded-xl border border-white/5">
+                        {['pl', 'en', 'uk'].map((l) => (
+                          <button
+                            key={l}
+                            onClick={() => handleUpdate('appLanguage', l, setLang)}
+                            className={`px-3 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${
+                              lang === l ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                          >
+                            {l}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Имя (Красивый инпут) */}
+                    <div className={rowClass}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><User size={16} /></div>
+                        <span className="text-sm font-medium">{t[lang].name}</span>
+                      </div>
+                      <input 
+                        type="text" 
+                        value={userName} 
+                        onChange={(e) => handleUpdate('userName', e.target.value, setUserName)}
+                        placeholder="..."
+                        className={`${inputClass} w-32`}
+                      />
+                    </div>
+
+                    {/* Пол (Красивый переключатель) */}
+                    <div className={`${rowClass} flex-col items-stretch gap-3`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center"><HeartPulse size={16} /></div>
+                        <span className="text-sm font-medium">{t[lang].gender}</span>
+                      </div>
+                      <div className="flex bg-[#0B0316]/80 p-1 rounded-xl border border-white/5 w-full">
+                        <button
+                          onClick={() => handleGenderChange('female')}
+                          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                            gender === 'female' ? 'bg-pink-600 text-white shadow-[0_0_12px_rgba(219,39,119,0.5)]' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          {t[lang].female}
+                        </button>
+                        <button
+                          onClick={() => handleGenderChange('male')}
+                          className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
+                            gender === 'male' ? 'bg-indigo-600 text-white shadow-[0_0_12px_rgba(79,70,229,0.5)]' : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          }`}
+                        >
+                          {t[lang].male}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- СЕКЦИЯ: ПАРАМЕТРЫ --- */}
+                <div>
+                  <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
+                    {t[lang].params}
+                  </span>
+                  <div className="bg-[#13072E]/40 border border-purple-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
+                    {/* Возраст */}
+                    <div className={rowClass}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-yellow-500/20 text-yellow-400 flex items-center justify-center"><Calendar size={16} /></div>
+                        <span className="text-sm font-medium">{t[lang].age}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={age} onChange={(e) => handleUpdate('userAge', e.target.value, setAge)} placeholder="-" className={`${inputClass} w-20`} />
+                        <span className="w-4"></span>
+                      </div>
+                    </div>
+                    
+                    {/* Рост */}
+                    <div className={rowClass}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center"><Ruler size={16} /></div>
+                        <span className="text-sm font-medium">{t[lang].height}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={height} onChange={(e) => handleUpdate('userHeight', e.target.value, setHeight)} placeholder="-" className={`${inputClass} w-20`} />
+                        <span className="text-xs font-bold text-white/30 w-4">cm</span>
+                      </div>
+                    </div>
+
+                    {/* Вес */}
+                    <div className={rowClass}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center"><Weight size={16} /></div>
+                        <span className="text-sm font-medium">{t[lang].weight}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="number" value={weight} onChange={(e) => handleUpdate('userWeight', e.target.value, setWeight)} placeholder="-" className={`${inputClass} w-20`} />
+                        <span className="text-xs font-bold text-white/30 w-4">kg</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- СЕКЦИЯ: БЕЗОПАСНОСТЬ --- */}
+                <div>
+                  <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
+                    {t[lang].sec}
+                  </span>
+                  <div className="bg-[#13072E]/40 border border-purple-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
+                    <div className={rowClass}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center"><ShieldCheck size={16} /></div>
+                        <span className="text-sm font-medium">{t[lang].bio}</span>
+                      </div>
+                      <button 
+                        onClick={() => handleUpdate('useBiometrics', !useBiometrics, setUseBiometrics)} 
+                        className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 focus:outline-none shadow-inner border ${
+                          useBiometrics ? 'bg-emerald-500 border-emerald-500' : 'bg-[#0B0316] border-white/10'
+                        }`}
+                      >
+                        <span className={`bg-white w-4 h-4 rounded-full transition-transform duration-300 ${useBiometrics ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* --- СЕКЦИЯ: ДАННЫЕ (ЗЕЛЕНЫЙ СТИЛЬ) --- */}
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
+                    {t[lang].data}
+                  </span>
+                  <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
+                    {/* ЭКСПОРТ */}
+                    <button onClick={handleExportData} className={`w-full text-left flex items-center justify-between p-4 border-b border-emerald-500/10 hover:bg-emerald-500/10 transition-colors focus:outline-none active:bg-emerald-500/20`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><Download size={16} /></div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-emerald-400">{t[lang].backupDownload}</span>
+                          <span className="text-[10px] text-emerald-400/50">{t[lang].backupDownloadDesc}</span>
+                        </div>
+                      </div>
+                      <FileJson size={16} className="text-emerald-500/40" />
                     </button>
-                  )}
-                </div>
-              </div>
 
-              {/* ПОЛЕ: ВЫБОР ПОЛА */}
-              <div className="text-left mb-5">
-                <label className="block text-xs font-bold text-purple-300/70 uppercase tracking-widest mb-2 ml-1">
-                  Płeć
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setTempGender('female')}
-                    className={`py-3 rounded-xl font-bold transition-all border ${
-                      tempGender === 'female' 
-                        ? 'bg-pink-500/20 border-pink-500 text-pink-300 shadow-[0_0_10px_rgba(236,72,153,0.2)]' 
-                        : 'bg-[#0B0316]/60 border-purple-500/20 text-purple-400/60 hover:bg-[#0B0316]'
-                    }`}
-                  >
-                    Kobieta
-                  </button>
-                  <button
-                    onClick={() => setTempGender('male')}
-                    className={`py-3 rounded-xl font-bold transition-all border ${
-                      tempGender === 'male' 
-                        ? 'bg-blue-500/20 border-blue-500 text-blue-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]' 
-                        : 'bg-[#0B0316]/60 border-purple-500/20 text-purple-400/60 hover:bg-[#0B0316]'
-                    }`}
-                  >
-                    Mężczyzna
-                  </button>
+                    {/* ИМПОРТ */}
+                    <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportData} className="hidden" />
+                    <button onClick={() => fileInputRef.current.click()} className={`w-full text-left flex items-center justify-between p-4 hover:bg-emerald-500/10 transition-colors focus:outline-none active:bg-emerald-500/20`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><Upload size={16} /></div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-emerald-400">{t[lang].backupUpload}</span>
+                          <span className="text-[10px] text-emerald-400/50">{t[lang].backupUploadDesc}</span>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-emerald-500/40" />
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <button 
-                onClick={saveSettings} 
-                className="w-full py-4 mt-2 bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white font-black tracking-widest uppercase rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] focus:outline-none"
-              >
-                Zapisz
-              </button>
+                {/* --- СЕКЦИЯ: ОПАСНАЯ ЗОНА --- */}
+                <div>
+                  <span className="text-[10px] font-bold text-red-500/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
+                    {t[lang].danger}
+                  </span>
+                  <div className="bg-red-500/5 border border-red-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
+                    <button onClick={handleResetData} className={`w-full text-left flex items-center p-4 hover:bg-red-500/10 transition-colors focus:outline-none active:bg-red-500/20`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center"><Trash2 size={16} /></div>
+                        <span className="text-sm font-bold text-red-400">{t[lang].resetData}</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* ИНФО */}
+                <p className="text-[9px] text-center text-purple-400/30 uppercase tracking-[0.1em] pb-4">
+                  {t[lang].localInfo}
+                </p>
+
+              </div>
             </div>
           </div>
         )}
 
-        {/* --- ЭКРАН ОНБОРДИНГА (ПРИВЕТСТВИЕ) --- */}
+        {/* --- ЭКРАН ОНБОРДИНГА --- */}
         {showWelcomeModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center px-4 bg-[#0B0316]/95 backdrop-blur-md transition-all duration-300">
             <div className="bg-[#13072E] border border-purple-500/40 rounded-[2.5rem] p-8 w-full max-w-sm shadow-[0_0_80px_rgba(168,85,247,0.4)] relative animate-modal-pop text-center">
-              
-              {/* Крестик выбирает мужчину по умолчанию и закрывает окно */}
-              <button 
-                type="button" 
-                onClick={() => handleWelcomeChoice('male')} 
-                className="absolute top-4 right-4 text-purple-400/60 hover:text-white transition-colors p-2 bg-white/5 rounded-full z-10 focus:outline-none"
-              >
+              <button onClick={() => handleWelcomeChoice('male')} className="absolute top-4 right-4 text-purple-400/60 hover:text-white transition-colors p-2 bg-white/5 rounded-full z-10 focus:outline-none">
                 <X size={20} />
               </button>
-              
               <div className="w-20 h-20 mx-auto bg-gradient-to-tr from-fuchsia-500 to-purple-600 rounded-full flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(168,85,247,0.5)]">
                 <Sparkles size={36} className="text-white animate-pulse" />
               </div>
-
               <h2 className="text-2xl font-black text-white mb-3">Witaj w aplikacji! 👋</h2>
               <p className="text-sm text-purple-300/80 mb-8 leading-relaxed px-2">
                 Zanim zaczniemy osiągać cele, powiedz nam, jak mamy dostosować Twój profil. 
               </p>
-
               <div className="flex flex-col gap-3">
-                <button
-                  onClick={() => handleWelcomeChoice('female')}
-                  className="w-full py-4 rounded-2xl font-black tracking-widest uppercase transition-all bg-pink-500/10 border border-pink-500/30 text-pink-400 hover:bg-pink-500/20 hover:shadow-[0_0_15px_rgba(236,72,153,0.3)] active:scale-95"
-                >
+                <button onClick={() => handleWelcomeChoice('female')} className="w-full py-4 rounded-2xl font-black tracking-widest uppercase transition-all bg-pink-500/10 border border-pink-500/30 text-pink-400 hover:bg-pink-500/20 hover:shadow-[0_0_15px_rgba(236,72,153,0.3)] active:scale-95">
                   Jestem kobietą
                 </button>
-                <button
-                  onClick={() => handleWelcomeChoice('male')}
-                  className="w-full py-4 rounded-2xl font-black tracking-widest uppercase transition-all bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:shadow-[0_0_15px_rgba(59,130,246,0.3)] active:scale-95"
-                >
+                <button onClick={() => handleWelcomeChoice('male')} className="w-full py-4 rounded-2xl font-black tracking-widest uppercase transition-all bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/20 hover:shadow-[0_0_15px_rgba(79,70,229,0.3)] active:scale-95">
                   Jestem mężczyzną
                 </button>
               </div>

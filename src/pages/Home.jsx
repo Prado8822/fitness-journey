@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import localforage from 'localforage'; // ИМПОРТ НОВОЙ БАЗЫ ДАННЫХ
 import { 
   Flame, Dumbbell, Bike, Flower2, Footprints, Waves, Sparkles, HeartPulse,
   Mountain, Swords, Wind, Activity, Clock, Zap, Smile, CheckCircle2, ChevronRight, MapPin, CalendarDays, ChevronLeft, X, Droplet, Apple, Battery
@@ -11,9 +12,9 @@ const Home = ({ userName, gender, periodDate }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
   // Локальный стэйт для даты цикла
- const [localPeriodDate, setLocalPeriodDate] = useState(() => localStorage.getItem('periodDate') || periodDate || '');
+  const [localPeriodDate, setLocalPeriodDate] = useState(() => localStorage.getItem('periodDate') || periodDate || '');
 
-  // НОВЫЙ СТЭЙТ: Режим редактирования даты (чтобы не удалять всё из памяти)
+  // НОВЫЙ СТЭЙТ: Режим редактирования даты
   const [isEditingCycle, setIsEditingCycle] = useState(false);
 
   // Стэйты для анимации взрыва
@@ -32,11 +33,20 @@ const Home = ({ userName, gender, periodDate }) => {
   const [selectedActivityItem, setSelectedActivityItem] = useState(null);
   const [isCycleModalOpen, setIsCycleModalOpen] = useState(false);
 
+  // --- ИЗМЕНЕНИЕ: АСИНХРОННАЯ ЗАГРУЗКА ИЗ localforage ---
   useEffect(() => {
-    const stored = localStorage.getItem('activities');
-    if (stored) {
-      setActivities(JSON.parse(stored));
-    }
+    const loadActivities = async () => {
+      try {
+        const stored = await localforage.getItem('activities');
+        if (stored) {
+          setActivities(stored);
+        }
+      } catch (error) {
+        console.error("Błąd podczas ładowania aktywności:", error);
+      }
+    };
+    
+    loadActivities();
   }, []);
 
   useEffect(() => {
@@ -69,7 +79,6 @@ const Home = ({ userName, gender, periodDate }) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const hasActivitySelected = activities.some(a => a.date === selectedDate);
 
-    // Если выбран СЕГОДНЯШНИЙ день
     if (selectedDate === todayStr) {
       if (hasActivitySelected) {
         if (hour >= 5 && hour < 12) return "Poranny trening zaliczony! 🔥";
@@ -80,17 +89,13 @@ const Home = ({ userName, gender, periodDate }) => {
         if (hour >= 12 && hour < 18) return "Czas na popołudniową aktywność! ⚡";
         return "Zacznij swoją aktywność już teraz! 🌙";
       }
-    } 
-    // Если выбран ПРОШЛЫЙ день
-    else if (selectedDate < todayStr) {
+    } else if (selectedDate < todayStr) {
       if (hasActivitySelected) {
         return "Trening zaliczony w tym dniu! 🔥";
       } else {
         return "Dzień regeneracji? 🌱";
       }
-    } 
-    // Если выбран БУДУЩИЙ день
-    else {
+    } else {
       return "Planujesz nowy trening? 🎯";
     }
   };
@@ -186,20 +191,16 @@ const Home = ({ userName, gender, periodDate }) => {
   const goalProgress = Math.min((totalMinutesToday / dailyGoalMinutes) * 100, 100);
   const isGoalReached = totalMinutesToday >= dailyGoalMinutes;
 
- const calculateStreak = () => {
+  const calculateStreak = () => {
     if (!activities || activities.length === 0) return 0;
 
-    // Собираем все уникальные даты тренировок и сортируем их по порядку
     const uniqueDates = [...new Set(activities.map(a => a.date))].sort();
-
-    // Берем самую "дальнюю" дату из тех, что ты накликал (даже если это завтра или послезавтра)
     const latestDateStr = uniqueDates[uniqueDates.length - 1];
     
     let currDate = new Date(latestDateStr);
     let streak = 0;
 
     while (true) {
-      // Собираем чистую локальную дату без багов часовых поясов
       const year = currDate.getFullYear();
       const month = String(currDate.getMonth() + 1).padStart(2, '0');
       const day = String(currDate.getDate()).padStart(2, '0');
@@ -207,9 +208,9 @@ const Home = ({ userName, gender, periodDate }) => {
 
       if (uniqueDates.includes(checkStr)) {
         streak++;
-        currDate.setDate(currDate.getDate() - 1); // Шагаем ровно на 1 день назад
+        currDate.setDate(currDate.getDate() - 1);
       } else {
-        break; // Цепочка прервалась
+        break;
       }
     }
 
@@ -324,11 +325,10 @@ const Home = ({ userName, gender, periodDate }) => {
     setIsDatePickerOpen(true);
   };
 
-  // --- ИСПРАВЛЕНИЕ: Логика записи (сдвига) цикла ---
   const handleLogPeriod = () => {
-    setLocalPeriodDate(selectedDate); // Берем выбранную дату из календаря
+    setLocalPeriodDate(selectedDate);
     localStorage.setItem('periodDate', selectedDate);
-    setIsEditingCycle(false); // Выключаем режим редактирования
+    setIsEditingCycle(false);
   };
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -489,7 +489,7 @@ const Home = ({ userName, gender, periodDate }) => {
       {gender === 'female' && (
         <div className="mb-6 flex flex-col items-center w-full fade-in-up" style={{ animationDelay: '0.15s' }}>
           
-          {/* КАРТОЧКА ВИДЖЕТА (Либо реальные данные, либо режим Ожидания) */}
+          {/* КАРТОЧКА ВИДЖЕТА */}
           {currentCycleData ? (
             <div 
               onClick={() => setIsCycleModalOpen(true)}
@@ -524,9 +524,8 @@ const Home = ({ userName, gender, periodDate }) => {
             </div>
           )}
 
-          {/* ИСПРАВЛЕНИЕ: УМНАЯ КНОПКА С РЕЖИМОМ РЕДАКТИРОВАНИЯ */}
+          {/* УМНАЯ КНОПКА С РЕЖИМОМ РЕДАКТИРОВАНИЯ */}
           {!localPeriodDate || isEditingCycle ? (
-            // РЕЖИМ 1: ВЫБОР ДАТЫ (Срабатывает, если нет данных ИЛИ если нажали "Крестик")
             <button
               onClick={handleLogPeriod}
               className="mt-3 px-4 py-3 w-[90%] sm:w-[80%] bg-pink-500/10 border border-pink-500/30 text-pink-400 hover:text-pink-200 hover:bg-pink-500/20 text-[10.5px] font-black tracking-widest uppercase rounded-2xl active:scale-95 transition-all duration-300 focus:outline-none flex items-center justify-center gap-2 pink-glow-breathe"
@@ -535,10 +534,8 @@ const Home = ({ userName, gender, periodDate }) => {
               <span>Miesiączka zaczęła się {isToday ? 'dzisiaj' : 'w tym dniu'}</span>
             </button>
           ) : (
-            // РЕЖИМ 2: ПРОСМОТР И ПЕРЕХОД В РЕДАКТИРОВАНИЕ (Разделенная кнопка)
             <div className="mt-3 w-[90%] sm:w-[80%] flex h-11 rounded-2xl border border-pink-500/30 bg-pink-500/10 overflow-hidden pink-glow-breathe transition-all">
               
-              {/* Левая часть: Инфо */}
               <div className="flex-1 flex items-center justify-center px-1 sm:px-2 text-pink-400 text-[8.5px] sm:text-[10px] font-black tracking-widest uppercase text-center leading-none whitespace-nowrap">
                 {currentCycleData && currentCycleData.day <= 7 ? (
                   <span className="flex items-center gap-1.5 sm:gap-2">
@@ -551,10 +548,8 @@ const Home = ({ userName, gender, periodDate }) => {
                 )}
               </div>
               
-              {/* Полоска-разделитель */}
               <div className="w-px bg-pink-500/30"></div>
               
-              {/* Правая часть: Кнопка перехода в режим редактирования (Крестик) */}
               <button 
                 onClick={() => setIsEditingCycle(true)}
                 className="w-14 flex items-center justify-center text-pink-400 hover:text-white hover:bg-pink-500/30 transition-colors focus:outline-none"

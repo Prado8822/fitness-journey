@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import localforage from 'localforage'; // ИМПОРТ БАЗЫ ДАННЫХ
 
 const CalendarView = () => {
   const [value, setValue] = useState(new Date());
@@ -19,13 +20,18 @@ const CalendarView = () => {
     return totalMinutes >= 30;
   };
 
+  // --- ИЗМЕНЕНИЕ: АСИНХРОННАЯ ЗАГРУЗКА ---
   useEffect(() => {
-    const stored = localStorage.getItem('activities');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setActivities(parsed);
-      filterActivitiesByDate(value, parsed);
-    }
+    const loadData = async () => {
+      try {
+        const stored = await localforage.getItem('activities') || [];
+        setActivities(stored);
+        filterActivitiesByDate(value, stored);
+      } catch (error) {
+        console.error("Błąd podczas ładowania w CalendarView:", error);
+      }
+    };
+    loadData();
   }, []);
 
   const handleDateChange = (date) => {
@@ -39,16 +45,26 @@ const CalendarView = () => {
     setSelectedActivities(filtered);
   };
 
-  const handleDelete = (indexToDelete) => {
+  // --- ИЗМЕНЕНИЕ: АСИНХРОННОЕ УДАЛЕНИЕ ---
+  const handleDelete = async (indexToDelete) => {
     const dateStr = formatDate(value);
-    const updatedActivities = activities.filter((act, i) => {
-      if (act.date !== dateStr) return true;
-      const filteredForDate = activities.filter((a) => a.date === dateStr);
-      return act !== filteredForDate[indexToDelete];
-    });
+    
+    // Находим конкретный объект для удаления
+    const filteredForDate = activities.filter((a) => a.date === dateStr);
+    const itemToDelete = filteredForDate[indexToDelete];
+    
+    // Удаляем из массива
+    const updatedActivities = activities.filter((act) => act !== itemToDelete);
+    
     setActivities(updatedActivities);
     setSelectedActivities((prev) => prev.filter((_, i) => i !== indexToDelete));
-    localStorage.setItem('activities', JSON.stringify(updatedActivities));
+    
+    // Сохраняем в новую базу данных
+    try {
+      await localforage.setItem('activities', updatedActivities);
+    } catch (error) {
+      console.error("Błąd podczas usuwania w CalendarView:", error);
+    }
   };
 
   const activityDates = new Set(activities.map((a) => a.date));

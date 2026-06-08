@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import localforage from 'localforage'; // ИМПОРТ БАЗЫ ДАННЫХ
 
 const ActivityForm = () => {
   const [activity, setActivity] = useState({
@@ -13,14 +14,25 @@ const ActivityForm = () => {
     setActivity({ ...activity, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  // --- ИЗМЕНЕНИЕ: АСИНХРОННАЯ ЛОГИКА ---
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const stored = JSON.parse(localStorage.getItem('activities')) || [];
-    stored.push(activity);
-    localStorage.setItem('activities', JSON.stringify(stored));
+    try {
+      // Загружаем существующие записи асинхронно
+      const stored = (await localforage.getItem('activities')) || [];
+      
+      // Добавляем новую
+      const updated = [...stored, activity];
+      
+      // Сохраняем обратно в IndexedDB
+      await localforage.setItem('activities', updated);
 
-    setActivity({ type: '', duration: '', distance: '', intensity: '', date: '' });
+      setActivity({ type: '', duration: '', distance: '', intensity: '', date: '' });
+      alert('Aktywność dodana!');
+    } catch (error) {
+      console.error("Błąd podczas zapisywania w ActivityForm:", error);
+    }
   };
 
   const inputClasses = "w-full p-3 bg-[#13072E]/60 border border-purple-500/30 rounded-xl text-slate-200 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400 transition-all duration-300 placeholder-purple-300/40 [color-scheme:dark]";
