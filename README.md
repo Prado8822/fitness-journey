@@ -43,9 +43,9 @@
     <td align="center"><b>Analytics & Heatmaps</b></td>
   </tr>
   <tr>
-    <td><img src="" alt="Home Screen" width="250"/></td>
-    <td><img src="" alt="GPS Tracker Screen" width="250"/></td>
-    <td><img src="" alt="Stats Screen" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/d1a3068f-d974-46f0-8340-dbccc282c5f1" alt="Home Screen" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/1215c006-4eb6-4b63-9ded-f771ab3401e7" alt="GPS Tracker Screen" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/fbda1ac4-11c7-446a-b664-dd67d2713533" alt="Stats Screen" width="250"/></td>
   </tr>
   <tr>
     <td align="center"><b>Manual Activity Log</b></td>
@@ -53,9 +53,9 @@
     <td align="center"><b>Settings & Export</b></td>
   </tr>
   <tr>
-    <td><img src="" alt="Add Activity" width="250"/></td>
-    <td><img src="" alt="Achievements" width="250"/></td>
-    <td><img src="" alt="Settings" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/0061fccb-f80b-43aa-bb01-54d91b883c08" alt="Add Activity" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/1dcb4744-45af-4566-915f-99fac041ee58" alt="Achievements" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/2c54f776-a360-4ba5-88d1-9809c2d9c25d" alt="Settings" width="250"/></td>
   </tr>
 </table>
 
