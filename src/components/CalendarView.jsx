@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import localforage from 'localforage'; // ИМПОРТ БАЗЫ ДАННЫХ
+import localforage from 'localforage'; 
 
 const CalendarView = () => {
   const [value, setValue] = useState(new Date());

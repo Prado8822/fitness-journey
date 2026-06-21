@@ -11,8 +11,8 @@ export default defineConfig({
         name: 'Ember',
         short_name: 'Ember',
         description: 'Progresywna aplikacja do śledzenia aktywności sportowych i celów fitness',
-        theme_color: '#0B0316', // Заменили черный на темно-фиолетовый
-        background_color: '#0B0316', // Заменили белый на темно-фиолетовый
+        theme_color: '#0B0316', 
+        background_color: '#0B0316', 
         display: 'standalone',
         icons: [
           {

@@ -86,7 +86,6 @@ const GoalTracker = ({ current, goal, currentStreak, currentCalories = 0, dailyC
 
       <div className={`relative w-full flip-inner ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}>
         
-        {/* ================= ЛИЦЕВАЯ СТОРОНА (ТРЕНИРОВКИ) ================= */}
         <div className="flip-front w-full bg-[#13072E]/40 backdrop-blur-xl border border-purple-500/20 rounded-3xl p-6 shadow-[0_8px_30px_rgba(147,51,234,0.1)] flex items-center justify-between hover:bg-[#13072E]/60 transition-colors">
           <div className="flex-1 pr-4">
             <h2 className="text-sm font-bold text-purple-300/70 uppercase tracking-widest mb-2">{t('goal_tracker.weekly_goal_title')}</h2>

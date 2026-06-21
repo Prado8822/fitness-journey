@@ -2,7 +2,6 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import localforage from 'localforage';
 
-// Создаем кастомный детектор, который работает через IndexedDB (localforage)
 const localForageDetector = {
   type: 'languageDetector',
   async: true, 
@@ -39,11 +38,8 @@ const localForageDetector = {
 };
 
 i18n
-  // Подключаем наш новый детектор
   .use(localForageDetector)
-  // Передаем i18n в react-i18next
   .use(initReactI18next)
-  // Инициализируем
   .init({
     resources: {
       en: {

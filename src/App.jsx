@@ -272,7 +272,6 @@ function App() {
       isActive ? 'text-purple-400 drop-shadow-[0_0_6px_rgba(168,85,247,0.4)]' : 'text-slate-500 hover:text-purple-300'
     }`;
 
-  // Стили для строк и красивых инпутов
   const rowClass = "flex items-center justify-between p-4 bg-[#13072E]/60 border-b border-white/5 last:border-none transition-colors";
   const inputClass = "bg-[#0B0316]/80 border border-white/10 rounded-xl px-3 py-1.5 text-sm text-white focus:outline-none focus:border-purple-500/50 focus:ring-1 focus:ring-purple-500/50 transition-all placeholder-white/20 text-center shadow-inner";
 

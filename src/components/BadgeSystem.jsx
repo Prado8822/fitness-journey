@@ -52,7 +52,6 @@ const BadgeSystem = ({ achievedBadges, stats, activeChallenge }) => {
     { id: 'ognisko', title: t('badge_system.badges.ognisko_title', {defaultValue: 'Ognisko'}), description: t('badge_system.badges.ognisko_desc', {defaultValue: 'Spal łącznie 2,500 kcal.'}), icon: '🏕️', target: 2500, type: 'calories_total' },
     { id: 'pochodnia', title: t('badge_system.badges.pochodnia_title', {defaultValue: 'Pochodnia'}), description: t('badge_system.badges.pochodnia_desc', {defaultValue: 'Spal łącznie 5,000 kcal.'}), icon: '🧨', target: 5000, type: 'calories_total' },
 
-    // НОВЫЕ 5 ЗОЛОТЫХ (ИВЕНТОВЫЕ - привязаны к твоим 5 временным целям)
     { id: 'event_sprint', challengeId: 'c1', title: t('badge_system.badges.event_sprint_title'), description: t('badge_system.badges.event_sprint_desc'), icon: '🌩️', target: 20, type: 'distance', isEvent: true },
     { id: 'event_zelazna', challengeId: 'c2', title: t('badge_system.badges.event_zelazna_title'), description: t('badge_system.badges.event_zelazna_desc'), icon: '🛡️', target: 5, type: 'workouts', isEvent: true },
     { id: 'event_maraton', challengeId: 'c3', title: t('badge_system.badges.event_maraton_title'), description: t('badge_system.badges.event_maraton_desc'), icon: '🔱', target: 50, type: 'distance', isEvent: true },
@@ -80,7 +79,7 @@ const BadgeSystem = ({ achievedBadges, stats, activeChallenge }) => {
         if (evBadge && !unlockedEvents.includes(evBadge.id)) {
           const newUnlocked = [...unlockedEvents, evBadge.id];
           setUnlockedEvents(newUnlocked);
-          await localforage.setItem('unlockedEventBadges', newUnlocked); // Асинхронное сохранение
+          await localforage.setItem('unlockedEventBadges', newUnlocked); 
         }
       }
     };
@@ -96,7 +95,6 @@ const BadgeSystem = ({ achievedBadges, stats, activeChallenge }) => {
       if (!blob) throw new Error(t('badge_system.ui.share_error'));
       const file = new File([blob], `${selectedBadge.id}-achievement.png`, { type: 'image/png' });
       
-      // ССЫЛКА НА ПРИЛОЖЕНИЕ (замените на вашу реальную, когда опубликуете)
       const appUrl = 'https://prado8822.github.io/fitness-journey/'; 
       
       let shareTitle = t('badge_system.ui.share_default_title');
@@ -160,7 +158,6 @@ const BadgeSystem = ({ achievedBadges, stats, activeChallenge }) => {
     }).filter(badge => {
       if (badge.isEvent) {
          const isActiveEvent = activeChallenge && activeChallenge.id === badge.challengeId;
-         // Если ивент не активен сейчас и не разблокирован навсегда — скрываем его
          if (!badge.isAchieved && !isActiveEvent) return false;
       }
       if (badge.isLegendary && !badge.isAchieved && badge.displayProgress < 10) {

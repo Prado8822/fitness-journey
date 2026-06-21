@@ -40,7 +40,6 @@ const GoalsPage = () => {
       icon: Timer, colorBg: 'from-rose-500/20 to-pink-600/20', colorBorder: 'border-rose-500/30', 
       colorText: 'text-rose-400', progressBg: 'from-rose-500 to-pink-400' 
     },
-    // НОВЫЕ ОГНЕННЫЕ ВЫЗОВЫ:
     { 
       id: 'c6', title: t('goals_page.challenges.c6.title', {defaultValue: 'Potwór Kalorii'}), desc: t('goals_page.challenges.c6.desc', {defaultValue: 'Spal 3000 kcal w 7 dni.'}), 
       target: 3000, type: 'calories', days: 7, 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import localforage from 'localforage'; // ИМПОРТ НОВОЙ БАЗЫ ДАННЫХ
+import localforage from 'localforage'; 
 import { 
   Flame, Dumbbell, Bike, Flower2, Footprints, Waves, Sparkles, HeartPulse,
   Mountain, Swords, Wind, Activity, Clock, Zap, Smile, CheckCircle2, ChevronRight, MapPin, CalendarDays, ChevronLeft, X, Droplet, Apple, Battery
@@ -586,7 +586,6 @@ const Home = ({ userName, gender, periodDate }) => {
 
       <div className="grid grid-cols-2 gap-4 mb-8 fade-in-up" style={{ animationDelay: '0.2s' }}>
         
-        {/* КАРТОЧКА ЦЕЛИ ДНЯ */}
         <div 
           onClick={handleGoalClick}
           className={`bg-[#13072E]/40 backdrop-blur-xl border border-purple-500/20 rounded-3xl p-5 flex flex-col items-center justify-center relative overflow-hidden select-none transition-all duration-500 cursor-pointer
@@ -615,7 +614,6 @@ const Home = ({ userName, gender, periodDate }) => {
               <span className="text-[9px] font-bold text-purple-400 uppercase mt-1">/ {dailyGoalMinutes} min</span>
             </div>
           </div>
-          {/* ВЫВОД КАЛОРИЙ ЗА ДЕНЬ */}
           {totalCaloriesToday > 0 && (
              <div className="mt-3 text-[10px] font-black uppercase tracking-widest text-orange-400 flex items-center gap-1 bg-orange-500/10 px-2 py-1 rounded-lg border border-orange-500/30">
                <Flame size={12}/> {totalCaloriesToday} kcal

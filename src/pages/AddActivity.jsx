@@ -264,8 +264,7 @@ const AddActivity = () => {
     if (!form.duration || form.duration <= 0) return alert(t('add_activity.alert_duration'));
     if (!form.intensity) return alert(t('add_activity.alert_intensity')); 
     if (!form.mood) return alert(t('add_activity.alert_mood')); 
-    
-    // РАССЧИТЫВАЕМ КАЛОРИИ ПЕРЕД СОХРАНЕНИЕМ
+
     const calculatedCalories = calculateCalories(form.duration, form.intensity, form.type, userProfile);
 
     const newActivity = {
