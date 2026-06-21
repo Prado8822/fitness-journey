@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Ember',
-        short_name: 'Ember',
+        name: 'Aplikacja sportowa',
+        short_name: 'Aplikacja sportowa',
         description: 'Progresywna aplikacja do śledzenia aktywności sportowych i celów fitness',
         theme_color: '#0B0316', 
         background_color: '#0B0316', 
