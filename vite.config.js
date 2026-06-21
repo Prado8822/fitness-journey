@@ -8,11 +8,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'FitFlow',
-        short_name: 'FitFlow',
+        name: 'Ember',
+        short_name: 'Ember',
         description: 'Progresywna aplikacja do śledzenia aktywności sportowych i celów fitness',
-        theme_color: '#000',
-        background_color: '#ffffff',
+        theme_color: '#0B0316', // Заменили черный на темно-фиолетовый
+        background_color: '#0B0316', // Заменили белый на темно-фиолетовый
         display: 'standalone',
         icons: [
           {

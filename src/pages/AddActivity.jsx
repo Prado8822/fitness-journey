@@ -1,16 +1,61 @@
 import React, { useState, useEffect, useRef } from 'react';
-import localforage from 'localforage'; // ИМПОРТ НОВОЙ БАЗЫ ДАННЫХ
+import localforage from 'localforage';
 import { 
   Clock, MapPin, Zap, CalendarDays, X, History,
   Flame, Dumbbell, Bike, Flower2, Footprints, Waves, Sparkles, HeartPulse,
   Mountain, Swords, Wind, Activity, ChevronLeft, ChevronRight, ArrowRight,
-  Plus, Minus, RefreshCw, Smile, Navigation
+  Plus, Minus, RefreshCw, Smile, Navigation, Trash2
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-// ИМПОРТИРУЕМ НАСТОЯЩИЙ GPS-ТРЕКЕР
 import TrackerWithMap from '../components/Tracker';
 
+const calculateCalories = (duration, intensity, type, userProfile) => {
+  const { weight, height, age, gender } = userProfile;
+  
+  if (!weight || !height || !age || !gender) return 0;
+
+  const w = parseFloat(weight);
+  const h = parseFloat(height);
+  const a = parseInt(age);
+  const timeInHours = parseFloat(duration) / 60;
+
+  let bmr = 10 * w + 6.25 * h - 5 * a;
+  if (gender === 'male') {
+    bmr += 5;
+  } else {
+    bmr -= 161;
+  }
+  
+  const bmrPerHour = bmr / 24;
+
+  const baseMets = {
+    'Bieganie': 8.0,
+    'Trening siłowy': 5.0,
+    'Jazda na rowerze': 6.0,
+    'Joga': 2.5,
+    'Spacer': 3.5,
+    'Pływanie': 7.0,
+    'Kardio': 7.5,
+    'Trekking': 6.5,
+    'Sporty walki': 8.5,
+    'Rolki': 6.0,
+    'Rozciąganie': 2.0,
+    'Inne': 4.0
+  };
+
+  let met = baseMets[type] || 4.0;
+
+  if (intensity === 'Niska' || intensity === 'low') met *= 0.8;
+  if (intensity === 'Wysoka' || intensity === 'high') met *= 1.2;
+
+  const burnedCalories = Math.round(bmrPerHour * met * timeInHours);
+  
+  return burnedCalories > 0 ? burnedCalories : 0;
+};
+
 const AddActivity = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('gps'); // 'gps' lub 'manual'
 
   const [step, setStep] = useState(1);
@@ -36,19 +81,21 @@ const AddActivity = () => {
   const [isDragging, setIsDragging] = useState(false);
   const touchStartY = useRef(null);
 
+  const [userProfile, setUserProfile] = useState({});
+
   const activityTypes = [
-    { id: 'Bieganie', label: 'Bieganie', requiresDistance: true, icon: <Flame size={24} className="text-orange-400" /> },
-    { id: 'Trening siłowy', label: 'Siłownia', requiresDistance: false, icon: <Dumbbell size={24} className="text-slate-300" /> },
-    { id: 'Jazda na rowerze', label: 'Rower', requiresDistance: true, icon: <Bike size={24} className="text-sky-400" /> },
-    { id: 'Joga', label: 'Joga', requiresDistance: false, icon: <Flower2 size={24} className="text-pink-400" /> },
-    { id: 'Spacer', label: 'Spacer', requiresDistance: true, icon: <Footprints size={24} className="text-emerald-400" /> },
-    { id: 'Pływanie', label: 'Pływanie', requiresDistance: true, icon: <Waves size={24} className="text-blue-400" /> },
-    { id: 'Kardio', label: 'Kardio', requiresDistance: false, icon: <HeartPulse size={24} className="text-red-400" /> },
-    { id: 'Trekking', label: 'Trekking', requiresDistance: true, icon: <Mountain size={24} className="text-emerald-500" /> },
-    { id: 'Sporty walki', label: 'Sztuki walki', requiresDistance: false, icon: <Swords size={24} className="text-rose-500" /> },
-    { id: 'Rolki', label: 'Rolki', requiresDistance: true, icon: <Wind size={24} className="text-cyan-400" /> },
-    { id: 'Rozciąganie', label: 'Rozciąganie', requiresDistance: false, icon: <Activity size={24} className="text-violet-400" /> },
-    { id: 'Inne', label: 'Inne', requiresDistance: false, icon: <Sparkles size={24} className="text-yellow-400" /> },
+    { id: 'Bieganie', label: t('activities_labels.running', { defaultValue: 'Bieganie' }), requiresDistance: true, icon: <Flame size={24} className="text-orange-400" /> },
+    { id: 'Trening siłowy', label: t('activities_labels.gym', { defaultValue: 'Siłownia' }), requiresDistance: false, icon: <Dumbbell size={24} className="text-slate-300" /> },
+    { id: 'Jazda na rowerze', label: t('activities_labels.cycling', { defaultValue: 'Rower' }), requiresDistance: true, icon: <Bike size={24} className="text-sky-400" /> },
+    { id: 'Joga', label: t('activities_labels.yoga', { defaultValue: 'Joga' }), requiresDistance: false, icon: <Flower2 size={24} className="text-pink-400" /> },
+    { id: 'Spacer', label: t('activities_labels.walking', { defaultValue: 'Spacer' }), requiresDistance: true, icon: <Footprints size={24} className="text-emerald-400" /> },
+    { id: 'Pływanie', label: t('activities_labels.swimming', { defaultValue: 'Pływanie' }), requiresDistance: true, icon: <Waves size={24} className="text-blue-400" /> },
+    { id: 'Kardio', label: t('activities_labels.cardio', { defaultValue: 'Kardio' }), requiresDistance: false, icon: <HeartPulse size={24} className="text-red-400" /> },
+    { id: 'Trekking', label: t('activities_labels.trekking', { defaultValue: 'Trekking' }), requiresDistance: true, icon: <Mountain size={24} className="text-emerald-500" /> },
+    { id: 'Sporty walki', label: t('activities_labels.martial_arts', { defaultValue: 'Sztuki walki' }), requiresDistance: false, icon: <Swords size={24} className="text-rose-500" /> },
+    { id: 'Rolki', label: t('activities_labels.rollerblading', { defaultValue: 'Rolki' }), requiresDistance: true, icon: <Wind size={24} className="text-cyan-400" /> },
+    { id: 'Rozciąganie', label: t('activities_labels.stretching', { defaultValue: 'Rozciąganie' }), requiresDistance: false, icon: <Activity size={24} className="text-violet-400" /> },
+    { id: 'Inne', label: t('activities_labels.other', { defaultValue: 'Inne' }), requiresDistance: false, icon: <Sparkles size={24} className="text-yellow-400" /> },
   ];
 
   const moods = [
@@ -59,20 +106,27 @@ const AddActivity = () => {
     { id: 'great', emoji: '🤩' }
   ];
 
-  // --- ИЗМЕНЕНИЕ 1: АСИНХРОННАЯ ЗАГРУЗКА ИЗ localforage ---
-  const loadActivities = async () => {
+  const loadActivitiesAndProfile = async () => {
     try {
-      const stored = await localforage.getItem('activities');
-      if (stored) {
-        setActivities(stored);
+      const storedActivities = await localforage.getItem('activities');
+      if (storedActivities) {
+        setActivities(storedActivities);
       }
+
+      const w = await localforage.getItem('userWeight');
+      const h = await localforage.getItem('userHeight');
+      const a = await localforage.getItem('userAge');
+      const g = await localforage.getItem('userGender');
+      
+      setUserProfile({ weight: w, height: h, age: a, gender: g });
+
     } catch (error) {
-      console.error("Błąd podczas ładowania aktywności:", error);
+      console.error("Błąd podczas ładowania danych:", error);
     }
   };
 
   useEffect(() => {
-    loadActivities();
+    loadActivitiesAndProfile();
   }, []);
 
   useEffect(() => {
@@ -205,18 +259,25 @@ const AddActivity = () => {
     setForm({ ...form, mood });
   };
 
-  // --- ИЗМЕНЕНИЕ 2: АСИНХРОННОЕ СОХРАНЕНИЕ ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.duration || form.duration <= 0) return alert('Wpisz czas treningu!');
-    if (!form.intensity) return alert('Wybierz intensywność!'); 
-    if (!form.mood) return alert('Wybierz samopoczucie!'); 
+    if (!form.duration || form.duration <= 0) return alert(t('add_activity.alert_duration'));
+    if (!form.intensity) return alert(t('add_activity.alert_intensity')); 
+    if (!form.mood) return alert(t('add_activity.alert_mood')); 
     
-    const updated = [...activities, form];
+    // РАССЧИТЫВАЕМ КАЛОРИИ ПЕРЕД СОХРАНЕНИЕМ
+    const calculatedCalories = calculateCalories(form.duration, form.intensity, form.type, userProfile);
+
+    const newActivity = {
+      ...form,
+      calories: calculatedCalories 
+    };
+
+    const updated = [...activities, newActivity];
     setActivities(updated);
     
     try {
-      await localforage.setItem('activities', updated); // Сохраняем напрямую в localforage
+      await localforage.setItem('activities', updated);
     } catch (error) {
       console.error("Błąd podczas zapisywania:", error);
     }
@@ -226,21 +287,39 @@ const AddActivity = () => {
     window.scrollTo(0, 0);
   };
 
-  // --- ИЗМЕНЕНИЕ 3: АСИНХРОННОЕ УДАЛЕНИЕ ---
   const handleDelete = async (index) => {
     const updated = [...activities];
     updated.splice(index, 1);
     setActivities(updated);
     
     try {
-      await localforage.setItem('activities', updated); // Обновляем базу после удаления
+      await localforage.setItem('activities', updated);
+      
+      if (updated.length === 0) {
+        await localforage.removeItem('unlockedEventBadges');
+        await localforage.removeItem('dynamicChallengeState');
+      }
     } catch (error) {
       console.error("Błąd podczas usuwania:", error);
     }
   };
 
-  const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
-  const weekDays = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+  const handleClearAllHistory = async () => {
+    if (window.confirm(t('add_activity.confirm_clear', {defaultValue: 'Czy na pewno chcesz usunąć całą historię? Twój postęp i trofea zostaną całkowicie zresetowane!'}))) {
+      setActivities([]);
+      try {
+        await localforage.removeItem('activities');
+        await localforage.removeItem('unlockedEventBadges');
+        await localforage.removeItem('dynamicChallengeState');
+        closeHistory();
+      } catch (error) {
+        console.error("Błąd podczas czyszczenia historii:", error);
+      }
+    }
+  };
+
+  const monthNames = [t('months.jan'), t('months.feb'), t('months.mar'), t('months.apr'), t('months.may'), t('months.jun'), t('months.jul'), t('months.aug'), t('months.sep'), t('months.oct'), t('months.nov'), t('months.dec')];
+  const weekDays = [t('days.mon'), t('days.tue'), t('days.wed'), t('days.thu'), t('days.fri'), t('days.sat'), t('days.sun')];
   
   const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
@@ -279,7 +358,7 @@ const AddActivity = () => {
   };
 
   const formatDisplayDate = (dateString) => {
-    if (!dateString) return 'Wybierz datę';
+    if (!dateString) return t('add_activity.select_date');
     const [y, m, d] = dateString.split('-');
     return `${d} ${monthNames[parseInt(m, 10) - 1]} ${y}`;
   };
@@ -296,8 +375,26 @@ const AddActivity = () => {
     'Wysoka': { activeBg: 'bg-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.2)] border-red-500/40', idleBg: 'hover:bg-red-500/5', activeText: 'text-red-400', idleText: 'text-slate-500 hover:text-red-300/80', particle: 'bg-red-500' }
   };
 
+  const getIntensityTranslation = (lvl) => {
+    if (lvl === 'Niska' || lvl === 'low') return t('add_activity.intensity_low');
+    if (lvl === 'Średnia' || lvl === 'medium') return t('add_activity.intensity_medium');
+    if (lvl === 'Wysoka' || lvl === 'high') return t('add_activity.intensity_high');
+    return lvl;
+  };
+
   return (
-    <div className="w-full pb-28 pt-8 px-4 sm:px-6 mx-auto max-w-7xl overflow-hidden relative">
+    <div className="w-full pb-28 pt-2 px-4 sm:px-6 mx-auto max-w-7xl overflow-hidden relative">
+      <div 
+        className="fixed top-0 left-0 w-full z-[90] pointer-events-none"
+        style={{
+          height: 'calc(env(safe-area-inset-top) + 80px)',
+          background: 'linear-gradient(to bottom, rgba(11, 3, 22, 1) 0%, rgba(11, 3, 22, 0.6) 40%, transparent 100%)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)'
+        }}
+      ></div>
       <style>{`
         * {
           -webkit-tap-highlight-color: transparent;
@@ -340,7 +437,6 @@ const AddActivity = () => {
         .animate-float { animation: float-badge 3s ease-in-out infinite; }
       `}</style>
 
-      {/* --- КНОПКИ-ПЕРЕКЛЮЧАТЕЛИ ТАБОВ --- */}
       <div className="flex bg-[#13072E]/60 p-1.5 rounded-2xl border border-purple-500/20 w-full max-w-xl mx-auto shadow-inner mb-8 relative z-20">
         <button
           onClick={() => setActiveTab('gps')}
@@ -350,7 +446,7 @@ const AddActivity = () => {
               : 'text-purple-400/50 hover:text-purple-300/80 hover:bg-white/5 border border-transparent'
           }`}
         >
-          <Navigation size={16} /> GPS
+          <Navigation size={16} /> {t('add_activity.tab_gps', 'GPS')}
         </button>
         <button
           onClick={() => {
@@ -363,27 +459,23 @@ const AddActivity = () => {
               : 'text-purple-400/50 hover:text-purple-300/80 hover:bg-white/5 border border-transparent'
           }`}
         >
-          <Plus size={16} /> Ręcznie
+          <Plus size={16} /> {t('add_activity.tab_manual')}
         </button>
       </div>
 
-      {/* --- ВКЛАДКА 1: GPS ТРЕНИРОВКА --- */}
-      {/* Используем CSS-классы для скрытия, чтобы компонент не размонтировался */}
       <div className={activeTab === 'gps' ? 'fade-in-up block -mx-4 sm:-mx-6' : 'hidden'}>
-         <TrackerWithMap onWorkoutSaved={loadActivities} />
+         <TrackerWithMap onWorkoutSaved={loadActivitiesAndProfile} />
       </div>
 
-      {/* --- ВКЛАДКА 2: РУЧНОЙ ВВОД --- */}
-      {/* Точно так же скрываем ручной ввод через CSS */}
       <div className={activeTab === 'manual' ? 'block' : 'hidden'}>
         {step === 1 && (
           <div className="flex justify-between items-start mb-8 relative z-10 fade-in-up">
             <div className="text-left">
               <h2 className="text-3xl font-black bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-sm mb-2">
-                Co dzisiaj trenowałeś?
+                {t('add_activity.heading_what')}
               </h2>
               <p className="text-purple-400/60 text-sm font-medium tracking-wide">
-                Wybierz aktywność z listy poniżej
+                {t('add_activity.subheading_select')}
               </p>
             </div>
               
@@ -456,12 +548,12 @@ const AddActivity = () => {
                       type="text"
                       value={form.customName}
                       onChange={(e) => setForm({...form, customName: e.target.value})}
-                      placeholder="Nazwa treningu..."
+                      placeholder={t('add_activity.custom_name_placeholder')}
                       className="bg-transparent border-b border-purple-500/50 text-xl sm:text-2xl font-black text-white text-center focus:outline-none focus:border-purple-400 placeholder:text-purple-300/30 w-full max-w-[200px]"
                     />
                   ) : (
                     <h2 className="text-xl sm:text-2xl font-black bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-sm truncate text-center">
-                      Dodaj: {selectedActivity?.label}
+                      {t('add_activity.add_prefix')}: {selectedActivity?.label}
                     </h2>
                   )}
                 </div>
@@ -491,7 +583,7 @@ const AddActivity = () => {
                       className="bg-[#0B0316]/60 border border-purple-500/20 rounded-[2rem] p-5 flex flex-col items-center justify-center relative group hover:border-purple-500/50 transition-colors shadow-inner"
                       onWheel={(e) => { e.preventDefault(); adjustTime(e.deltaY < 0 ? 1 : -1); }}
                     >
-                      <label className={labelClasses}><Clock size={18} className="text-indigo-400" /> Czas</label>
+                      <label className={labelClasses}><Clock size={18} className="text-indigo-400" /> {t('add_activity.time')}</label>
                       
                       <div className="flex items-center justify-between w-full mt-2">
                         <button type="button" onClick={() => adjustTime(-5)} className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 hover:bg-indigo-500 hover:text-white active:scale-90 transition-all shadow-sm shrink-0">
@@ -508,7 +600,7 @@ const AddActivity = () => {
                             className="bg-transparent text-center text-5xl font-black text-white w-full focus:outline-none placeholder:text-slate-700" 
                             placeholder="0" 
                           />
-                          <span className="text-[11px] text-purple-400/60 uppercase tracking-widest mt-1 font-bold">Minut</span>
+                          <span className="text-[11px] text-purple-400/60 uppercase tracking-widest mt-1 font-bold">{t('add_activity.minutes')}</span>
                         </div>
 
                         <button type="button" onClick={() => adjustTime(5)} className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 hover:bg-indigo-500 hover:text-white active:scale-90 transition-all shadow-sm shrink-0">
@@ -522,7 +614,7 @@ const AddActivity = () => {
                         className="bg-[#0B0316]/60 border border-purple-500/20 rounded-[2rem] p-5 flex flex-col items-center justify-center relative group hover:border-purple-500/50 transition-colors shadow-inner animate-in fade-in zoom-in-95 duration-300"
                         onWheel={(e) => { e.preventDefault(); adjustDistance(e.deltaY < 0 ? 0.1 : -0.1); }}
                       >
-                        <label className={labelClasses}><MapPin size={18} className="text-purple-400" /> Dystans</label>
+                        <label className={labelClasses}><MapPin size={18} className="text-purple-400" /> {t('add_activity.distance')}</label>
                         
                         <div className="flex items-center justify-between w-full mt-2">
                           <button type="button" onClick={() => adjustDistance(-0.5)} className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 hover:bg-purple-500 hover:text-white active:scale-90 transition-all shadow-sm shrink-0">
@@ -539,7 +631,7 @@ const AddActivity = () => {
                               className="bg-transparent text-center text-5xl font-black text-white w-full focus:outline-none placeholder:text-slate-700" 
                               placeholder="0.0" 
                             />
-                            <span className="text-[11px] text-purple-400/60 uppercase tracking-widest mt-1 font-bold">Kilometrów</span>
+                            <span className="text-[11px] text-purple-400/60 uppercase tracking-widest mt-1 font-bold">{t('add_activity.kilometers')}</span>
                           </div>
 
                           <button type="button" onClick={() => adjustDistance(0.5)} className="w-12 h-12 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 hover:bg-purple-500 hover:text-white active:scale-90 transition-all shadow-sm shrink-0">
@@ -551,7 +643,7 @@ const AddActivity = () => {
                   </div>
 
                   <div>
-                    <label className="flex items-center justify-center gap-2 mb-3 text-sm font-medium text-purple-200 tracking-wide uppercase"><Zap size={16} className="text-yellow-400" /> Intensywność</label>
+                    <label className="flex items-center justify-center gap-2 mb-3 text-sm font-medium text-purple-200 tracking-wide uppercase"><Zap size={16} className="text-yellow-400" /> {t('add_activity.intensity')}</label>
                     <div className="grid grid-cols-3 gap-2 sm:gap-4 p-1.5 bg-[#0B0316]/50 border border-purple-950 rounded-2xl relative overflow-hidden shadow-inner">
                       {['Niska', 'Średnia', 'Wysoka'].map((level) => {
                         const isSelected = form.intensity === level;
@@ -566,7 +658,7 @@ const AddActivity = () => {
                             }`}
                           >
                             <span className={`relative z-10 font-bold text-[11px] sm:text-sm tracking-widest uppercase transition-colors duration-300 ${isSelected ? styles.activeText : styles.idleText}`}>
-                              {level}
+                              {getIntensityTranslation(level)}
                             </span>
                             {explodingButton === level && (
                               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -590,7 +682,7 @@ const AddActivity = () => {
                   </div>
 
                   <div>
-                    <label className="flex items-center justify-center gap-2 mb-3 text-sm font-medium text-purple-200 tracking-wide uppercase"><Smile size={16} className="text-emerald-400" /> Samopoczucie</label>
+                    <label className="flex items-center justify-center gap-2 mb-3 text-sm font-medium text-purple-200 tracking-wide uppercase"><Smile size={16} className="text-emerald-400" /> {t('add_activity.mood')}</label>
                     <div className="flex justify-between items-center p-2 sm:p-3 bg-[#0B0316]/50 border border-purple-950 rounded-2xl shadow-inner">
                       {moods.map((m) => {
                         const isSelected = form.mood === m.emoji;
@@ -613,29 +705,29 @@ const AddActivity = () => {
                   </div>
 
                   <div>
-                    <label className="flex items-center justify-center gap-2 mb-3 text-sm font-medium text-purple-200 tracking-wide uppercase"><CalendarDays size={16} className="text-pink-400" /> Data</label>
+                    <label className="flex items-center justify-center gap-2 mb-3 text-sm font-medium text-purple-200 tracking-wide uppercase"><CalendarDays size={16} className="text-pink-400" /> {t('add_activity.date')}</label>
                     <button
                       type="button"
                       onClick={() => setIsDatePickerOpen(true)}
-                      className="w-full h-16 p-3 px-5 bg-[#0B0316]/60 border border-purple-500/20 rounded-2xl hover:border-purple-400/50 hover:bg-[#13072E]/60 transition-all duration-300 flex items-center justify-between group text-left shadow-inner"
+                      className="w-full min-h-[4rem] p-3 px-3 sm:px-5 bg-[#0B0316]/60 border border-purple-500/20 rounded-2xl hover:border-purple-400/50 hover:bg-[#13072E]/60 transition-all duration-300 flex items-center justify-between gap-2 group text-left shadow-inner"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all">
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <div className="p-2 bg-purple-500/10 rounded-xl text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0">
                           <CalendarDays size={20} />
                         </div>
-                        <span className="font-bold tracking-wider text-white text-lg">
+                        <span className="font-bold tracking-wide text-white text-sm sm:text-base truncate">
                           {formatDisplayDate(form.date)}
                         </span>
                       </div>
-                      <span className="text-xs font-bold text-purple-400/50 uppercase tracking-widest bg-purple-500/10 px-3 py-1.5 rounded-lg group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors">
-                        Zmień
+                      <span className="text-[10px] sm:text-xs font-bold text-purple-400/50 uppercase tracking-widest bg-purple-500/10 px-2 sm:px-3 py-1.5 rounded-lg group-hover:bg-purple-500/20 group-hover:text-purple-300 transition-colors shrink-0">
+                        {t('add_activity.change')}
                       </span>
                     </button>
                   </div>
 
                   <button type="submit" className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black py-5 px-6 rounded-2xl shadow-[0_4px_20px_rgba(147,51,234,0.4)] hover:shadow-[0_6px_30px_rgba(147,51,234,0.6)] transform transition-all duration-300 hover:-translate-y-1 active:scale-95 border border-purple-400/30 tracking-widest uppercase text-lg mt-8 flex items-center justify-center gap-3">
                     <Sparkles size={24} />
-                    Zapisz trening
+                    {t('add_activity.save_workout')}
                   </button>
                 </form>
               </div>
@@ -674,23 +766,36 @@ const AddActivity = () => {
 
                 <div className="flex justify-between items-center px-6 pb-4 pt-0 sm:pt-6 border-b border-purple-500/20">
                   <h2 className="text-2xl font-black bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">
-                    Twoja historia
+                    {t('add_activity.history_title')}
                   </h2>
-                  <button 
-                    type="button"
-                    onClick={closeHistory} 
-                    className="p-2 bg-white/5 rounded-full text-purple-400 hover:text-white hover:bg-white/10 transition-colors"
-                  >
-                    <X size={24}/>
-                  </button>
+                  
+                  <div className="flex items-center gap-2">
+                    {activities.length > 0 && (
+                      <button 
+                        type="button"
+                        onClick={handleClearAllHistory}
+                        className="p-2 bg-red-500/10 rounded-xl text-red-400 hover:text-white hover:bg-red-500/30 transition-colors shadow-inner"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    )}
+                    
+                    <button 
+                      type="button"
+                      onClick={closeHistory} 
+                      className="p-2 bg-white/5 rounded-full text-purple-400 hover:text-white hover:bg-white/10 transition-colors"
+                    >
+                      <X size={24}/>
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="p-4 overflow-y-auto flex-1 space-y-3 pb-24 hide-scrollbar">
                   {activities.length === 0 ? (
                     <div className="text-center text-purple-400/50 mt-10">
                       <History size={48} className="mx-auto mb-4 opacity-50" />
-                      <p className="font-bold tracking-wide">Brak zapisanych aktywności.</p>
-                      <p className="text-xs mt-1">Zrób swój pierwszy trening!</p>
+                      <p className="font-bold tracking-wide">{t('add_activity.history_empty')}</p>
+                      <p className="text-xs mt-1">{t('add_activity.history_do_first')}</p>
                     </div>
                   ) : (
                     [...activities].reverse().map((a, i) => {
@@ -710,7 +815,10 @@ const AddActivity = () => {
                             <div className="flex flex-wrap gap-x-4 gap-y-2 border-t border-purple-900/40 pt-2.5">
                               <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-200"><Clock size={14} className="text-indigo-400"/> {a.duration} min</span>
                               {a.distance && <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-200"><MapPin size={14} className="text-purple-400"/> {a.distance} km</span>}
-                              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-200"><Zap size={14} className="text-yellow-400"/> {a.intensity}</span>
+                              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-200"><Zap size={14} className="text-yellow-400"/> {getIntensityTranslation(a.intensity)}</span>
+                              
+                              {a.calories && <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-200"><Flame size={14} className="text-orange-500"/> {a.calories} kcal</span>}
+                              
                               {a.mood && <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-purple-200"><Smile size={14} className="text-emerald-400"/> {a.mood}</span>}
                             </div>
                           </div>
@@ -798,7 +906,7 @@ const AddActivity = () => {
                       onClick={setToday}
                       className="text-sm font-bold text-purple-400 hover:text-fuchsia-400 transition-colors tracking-widest uppercase"
                     >
-                      Dzisiaj
+                      {t('add_activity.today')}
                     </button>
                 </div>
               </div>

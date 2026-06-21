@@ -24,6 +24,5 @@ html, body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   width: 100%;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
+  /* Отступы отсюда удалены, они должны работать только внутри App.jsx */
 }

@@ -20,7 +20,6 @@ const CalendarView = () => {
     return totalMinutes >= 30;
   };
 
-  // --- ИЗМЕНЕНИЕ: АСИНХРОННАЯ ЗАГРУЗКА ---
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -45,21 +44,17 @@ const CalendarView = () => {
     setSelectedActivities(filtered);
   };
 
-  // --- ИЗМЕНЕНИЕ: АСИНХРОННОЕ УДАЛЕНИЕ ---
   const handleDelete = async (indexToDelete) => {
     const dateStr = formatDate(value);
     
-    // Находим конкретный объект для удаления
     const filteredForDate = activities.filter((a) => a.date === dateStr);
     const itemToDelete = filteredForDate[indexToDelete];
     
-    // Удаляем из массива
     const updatedActivities = activities.filter((act) => act !== itemToDelete);
     
     setActivities(updatedActivities);
     setSelectedActivities((prev) => prev.filter((_, i) => i !== indexToDelete));
     
-    // Сохраняем в новую базу данных
     try {
       await localforage.setItem('activities', updatedActivities);
     } catch (error) {

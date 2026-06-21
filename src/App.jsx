@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { 
   Home as HomeIcon, Plus, BarChart2, Target, Settings, X, Sparkles, 
-  Download, ShieldCheck, Upload, Trash2, Globe, User, Ruler, Weight, 
+  Download, Upload, Trash2, Globe, User, Ruler, Weight, 
   HeartPulse, ChevronRight, FileJson, Calendar
 } from 'lucide-react';
 import localforage from 'localforage';
+import { useTranslation } from 'react-i18next';
 
 import Home from './pages/Home.jsx';
 import AddActivity from './pages/AddActivity.jsx';
@@ -23,32 +24,39 @@ const ScrollToTop = () => {
 };
 
 function App() {
-  // --- ГЛОБАЛЬНЫЕ СТЭЙТЫ ---
+  const { i18n } = useTranslation();
+
   const [userName, setUserName] = useState('');
   
-  // Стейты для плавного открытия/закрытия настроек
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSettingsClosing, setIsSettingsClosing] = useState(false);
   
   const [lang, setLang] = useState('pl');
 
-  // --- ДАННЫЕ ПОЛЬЗОВАТЕЛЯ ---
   const [gender, setGender] = useState('');
   const [periodDate, setPeriodDate] = useState('');
   const [age, setAge] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
-  const [useBiometrics, setUseBiometrics] = useState(false);
 
-  // --- ОНБОРДИНГ ---
+
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     const loadSettings = async () => {
-      const storedLang = await localforage.getItem('appLanguage');
-      if (storedLang) setLang(storedLang);
+      let storedLang = await localforage.getItem('appLanguage');
+      
+      if (storedLang === 'uk') {
+        storedLang = 'ua';
+        await localforage.setItem('appLanguage', 'ua'); // Сразу исправляем в памяти
+      }
+      
+      if (storedLang) {
+        setLang(storedLang);
+        i18n.changeLanguage(storedLang);
+      }
 
       const storedName = await localforage.getItem('userName');
       if (storedName) setUserName(storedName);
@@ -69,23 +77,20 @@ function App() {
       const storedWeight = await localforage.getItem('userWeight');
       if (storedWeight) setWeight(storedWeight);
 
-      const storedBiometrics = await localforage.getItem('useBiometrics');
-      if (storedBiometrics === 'true') setUseBiometrics(true);
+
     };
 
     loadSettings();
-  }, []);
+  }, [i18n]);
 
-  // --- ФУНКЦИЯ ЗАКРЫТИЯ С АНИМАЦИЕЙ ---
   const closeSettings = () => {
     setIsSettingsClosing(true);
     setTimeout(() => {
       setIsSettingsOpen(false);
       setIsSettingsClosing(false);
-    }, 300); // Время совпадает с длительностью CSS анимации
+    }, 300); 
   };
 
-  // --- МГНОВЕННОЕ СОХРАНЕНИЕ ---
   const handleUpdate = async (key, value, setter) => {
     setter(value);
     if (value === '' || value === null) {
@@ -93,6 +98,12 @@ function App() {
     } else {
       await localforage.setItem(key, value.toString());
     }
+  };
+
+  const handleLanguageChange = async (newLang) => {
+    setLang(newLang); 
+    await localforage.setItem('appLanguage', newLang); 
+    i18n.changeLanguage(newLang); 
   };
 
   const handleGenderChange = async (selectedGender) => {
@@ -130,7 +141,10 @@ function App() {
       localInfo: "Dane są zapisywane lokalnie na urządzeniu",
       confirmReset: "Czy na pewno chcesz usunąć WSZYSTKIE dane? Tej operacji nie można cofnąć.",
       importSuccess: "Dane zostały pomyślnie wczytane!",
-      importError: "Błąd podczas ładowania pliku."
+      importError: "Błąd podczas ładowania pliku.",
+      navHome: "Główna",
+      navStats: "Statystyki",
+      navGoals: "Cele"
     },
     en: {
       settingsTitle: "Settings",
@@ -156,9 +170,12 @@ function App() {
       localInfo: "Data is stored locally on your device",
       confirmReset: "Are you sure you want to delete ALL data? This cannot be undone.",
       importSuccess: "Data imported successfully!",
-      importError: "Error loading file."
+      importError: "Error loading file.",
+      navHome: "Home",
+      navStats: "Stats",
+      navGoals: "Goals"
     },
-    uk: {
+    ua: {
       settingsTitle: "Налаштування",
       profile: "ПРОФІЛЬ",
       params: "ФІЗИЧНІ ПАРАМЕТРИ",
@@ -182,7 +199,10 @@ function App() {
       localInfo: "Дані зберігаються локально на пристрої",
       confirmReset: "Ви впевнені, що хочете видалити ВСІ дані? Цю дію неможливо скасувати.",
       importSuccess: "Дані успішно імпортовано!",
-      importError: "Помилка завантаження файлу."
+      importError: "Помилка завантаження файлу.",
+      navHome: "Головна",
+      navStats: "Статистика",
+      navGoals: "Цілі"
     }
   };
 
@@ -292,7 +312,21 @@ function App() {
           }
         `}</style>
 
-        <header className="max-w-xl mx-auto pt-6 px-4 relative z-40">
+        <div 
+          className="fixed top-0 left-0 w-full z-[90] pointer-events-none"
+          style={{
+            height: 'calc(env(safe-area-inset-top) + 20px)',
+            background: 'linear-gradient(to bottom, rgba(11, 3, 22, 0.8) 0%, rgba(11, 3, 22, 0) 100%)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
+            maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)'
+          }}
+        ></div>
+        <header 
+          className="max-w-xl mx-auto px-4 relative z-40"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)' }}
+        >
           <button 
             onClick={() => setIsSettingsOpen(true)}
             className="w-10 h-10 flex items-center justify-center bg-[#13072E]/60 border border-purple-500/20 rounded-xl text-purple-400 hover:text-white hover:bg-purple-600/30 transition-all shadow-[0_0_10px_rgba(147,51,234,0.1)] group active:scale-95 focus:outline-none"
@@ -301,7 +335,7 @@ function App() {
           </button>
         </header>
 
-        <main className="max-w-xl mx-auto mt-2 px-4">
+        <main className="max-w-xl mx-auto mt-4 px-4 relative z-30">
           <Routes>
             <Route path="/" element={<Home userName={userName} gender={gender} periodDate={periodDate} lang={lang} />} />
             <Route path="/add" element={<AddActivity lang={lang} />} />
@@ -314,14 +348,15 @@ function App() {
           className="fixed bottom-0 left-0 w-full bg-[#13072E]/80 backdrop-blur-xl border-t border-purple-900/50 z-50"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <div className="flex justify-center items-center gap-6 sm:gap-10 max-w-xl mx-auto px-4 py-4 relative">
+          <div className="flex justify-center items-end gap-6 sm:gap-10 max-w-xl mx-auto px-4 pt-2.5 pb-3 relative">
+            
             <NavLink to="/" className={navLinkClass}>
               <HomeIcon size={24} strokeWidth={2} />
-              <span className="text-[10px] font-semibold uppercase tracking-widest mt-1">Główna</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest mt-1">{t[lang].navHome}</span>
             </NavLink>
             
             <div className="relative w-14 flex justify-center shrink-0">
-              <NavLink to="/add" className="absolute -top-11 group">
+              <NavLink to="/add" className="absolute -top-[60px] group">
                 <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-tr from-purple-600 to-indigo-600 text-white rounded-full shadow-[0_4px_15px_rgba(147,51,234,0.4)] transform transition-all duration-300 group-hover:scale-105 group-active:scale-95 border border-purple-500/30">
                   <Plus size={28} strokeWidth={2.5} />
                 </div>
@@ -330,29 +365,29 @@ function App() {
 
             <NavLink to="/stats" className={navLinkClass}>
               <BarChart2 size={24} strokeWidth={2} />
-              <span className="text-[10px] font-semibold uppercase tracking-widest mt-1">Statystyki</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest mt-1">{t[lang].navStats}</span>
             </NavLink>
             
             <NavLink to="/goals" className={navLinkClass}>
               <Target size={24} strokeWidth={2} />
-              <span className="text-[10px] font-semibold uppercase tracking-widest mt-1">Cele</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest mt-1">{t[lang].navGoals}</span>
             </NavLink>
           </div>
         </nav>
 
-        {/* --- ВЫДВИЖНОЕ ОКНО НАСТРОЕК (SIDE DRAWER) --- */}
         {(isSettingsOpen || isSettingsClosing) && (
           <div className="fixed inset-0 z-[150] flex">
-            {/* Затемнение фона */}
             <div 
               className={`absolute inset-0 bg-[#0B0316]/70 backdrop-blur-sm ${isSettingsClosing ? 'animate-fade-out' : 'animate-fade-in'}`}
               onClick={closeSettings}
             ></div>
 
-            {/* Сама панель слева */}
             <div className={`relative w-[85%] max-w-sm h-full bg-[#0B0316] border-r border-purple-500/30 shadow-[20px_0_60px_rgba(168,85,247,0.2)] flex flex-col overflow-y-auto ${isSettingsClosing ? 'animate-slide-out-left' : 'animate-slide-in-left'}`}>
               
-              <div className="p-6 pb-2 border-b border-purple-500/20 bg-[#13072E]/40 sticky top-0 z-10 backdrop-blur-md flex items-center justify-between">
+              <div 
+                className="px-6 pb-4 border-b border-purple-500/20 bg-[#13072E]/40 sticky top-0 z-10 backdrop-blur-md flex items-center justify-between"
+                style={{ paddingTop: 'env(safe-area-inset-top)' }}
+              >
                 <h3 className="text-xl font-black text-white">{t[lang].settingsTitle}</h3>
                 <button type="button" onClick={closeSettings} className="text-purple-400 hover:text-white transition-colors p-2 bg-white/5 rounded-full focus:outline-none active:scale-90">
                   <X size={20} />
@@ -361,24 +396,22 @@ function App() {
 
               <div className="p-5 flex-1 space-y-6">
                 
-                {/* --- СЕКЦИЯ: ПРОФИЛЬ --- */}
                 <div>
                   <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
                     {t[lang].profile}
                   </span>
                   <div className="bg-[#13072E]/40 border border-purple-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
                     
-                    {/* Язык (Красивый переключатель) */}
                     <div className={rowClass}>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center"><Globe size={16} /></div>
                         <span className="text-sm font-medium">{t[lang].lang}</span>
                       </div>
                       <div className="flex bg-[#0B0316]/80 p-1 rounded-xl border border-white/5">
-                        {['pl', 'en', 'uk'].map((l) => (
+                        {['pl', 'en', 'ua'].map((l) => (
                           <button
                             key={l}
-                            onClick={() => handleUpdate('appLanguage', l, setLang)}
+                            onClick={() => handleLanguageChange(l)} 
                             className={`px-3 py-1.5 text-[10px] font-black uppercase rounded-lg transition-all ${
                               lang === l ? 'bg-blue-600 text-white shadow-[0_0_10px_rgba(37,99,235,0.4)]' : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
@@ -389,7 +422,6 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Имя (Красивый инпут) */}
                     <div className={rowClass}>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center"><User size={16} /></div>
@@ -404,7 +436,6 @@ function App() {
                       />
                     </div>
 
-                    {/* Пол (Красивый переключатель) */}
                     <div className={`${rowClass} flex-col items-stretch gap-3`}>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center"><HeartPulse size={16} /></div>
@@ -432,13 +463,11 @@ function App() {
                   </div>
                 </div>
 
-                {/* --- СЕКЦИЯ: ПАРАМЕТРЫ --- */}
                 <div>
                   <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
                     {t[lang].params}
                   </span>
                   <div className="bg-[#13072E]/40 border border-purple-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
-                    {/* Возраст */}
                     <div className={rowClass}>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-yellow-500/20 text-yellow-400 flex items-center justify-center"><Calendar size={16} /></div>
@@ -450,7 +479,6 @@ function App() {
                       </div>
                     </div>
                     
-                    {/* Рост */}
                     <div className={rowClass}>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center"><Ruler size={16} /></div>
@@ -462,7 +490,6 @@ function App() {
                       </div>
                     </div>
 
-                    {/* Вес */}
                     <div className={rowClass}>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center"><Weight size={16} /></div>
@@ -476,36 +503,11 @@ function App() {
                   </div>
                 </div>
 
-                {/* --- СЕКЦИЯ: БЕЗОПАСНОСТЬ --- */}
-                <div>
-                  <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
-                    {t[lang].sec}
-                  </span>
-                  <div className="bg-[#13072E]/40 border border-purple-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
-                    <div className={rowClass}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center"><ShieldCheck size={16} /></div>
-                        <span className="text-sm font-medium">{t[lang].bio}</span>
-                      </div>
-                      <button 
-                        onClick={() => handleUpdate('useBiometrics', !useBiometrics, setUseBiometrics)} 
-                        className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 focus:outline-none shadow-inner border ${
-                          useBiometrics ? 'bg-emerald-500 border-emerald-500' : 'bg-[#0B0316] border-white/10'
-                        }`}
-                      >
-                        <span className={`bg-white w-4 h-4 rounded-full transition-transform duration-300 ${useBiometrics ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* --- СЕКЦИЯ: ДАННЫЕ (ЗЕЛЕНЫЙ СТИЛЬ) --- */}
                 <div>
                   <span className="text-[10px] font-bold text-emerald-500/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
                     {t[lang].data}
                   </span>
                   <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-[1.5rem] overflow-hidden shadow-sm">
-                    {/* ЭКСПОРТ */}
                     <button onClick={handleExportData} className={`w-full text-left flex items-center justify-between p-4 border-b border-emerald-500/10 hover:bg-emerald-500/10 transition-colors focus:outline-none active:bg-emerald-500/20`}>
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><Download size={16} /></div>
@@ -517,7 +519,6 @@ function App() {
                       <FileJson size={16} className="text-emerald-500/40" />
                     </button>
 
-                    {/* ИМПОРТ */}
                     <input type="file" accept=".json" ref={fileInputRef} onChange={handleImportData} className="hidden" />
                     <button onClick={() => fileInputRef.current.click()} className={`w-full text-left flex items-center justify-between p-4 hover:bg-emerald-500/10 transition-colors focus:outline-none active:bg-emerald-500/20`}>
                       <div className="flex items-center gap-3">
@@ -532,7 +533,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* --- СЕКЦИЯ: ОПАСНАЯ ЗОНА --- */}
                 <div>
                   <span className="text-[10px] font-bold text-red-500/60 uppercase tracking-[0.15em] ml-4 mb-2 block">
                     {t[lang].danger}
@@ -547,7 +547,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* ИНФО */}
                 <p className="text-[9px] text-center text-purple-400/30 uppercase tracking-[0.1em] pb-4">
                   {t[lang].localInfo}
                 </p>
@@ -557,7 +556,6 @@ function App() {
           </div>
         )}
 
-        {/* --- ЭКРАН ОНБОРДИНГА --- */}
         {showWelcomeModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center px-4 bg-[#0B0316]/95 backdrop-blur-md transition-all duration-300">
             <div className="bg-[#13072E] border border-purple-500/40 rounded-[2.5rem] p-8 w-full max-w-sm shadow-[0_0_80px_rgba(168,85,247,0.4)] relative animate-modal-pop text-center">

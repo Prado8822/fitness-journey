@@ -5,19 +5,18 @@ import {
   Flame, Dumbbell, Bike, Flower2, Footprints, Waves, Sparkles, HeartPulse,
   Mountain, Swords, Wind, Activity, Clock, Zap, Smile, CheckCircle2, ChevronRight, MapPin, CalendarDays, ChevronLeft, X, Droplet, Apple, Battery
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const Home = ({ userName, gender, periodDate }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activities, setActivities] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
-  // Локальный стэйт для даты цикла
-  const [localPeriodDate, setLocalPeriodDate] = useState(() => localStorage.getItem('periodDate') || periodDate || '');
+  const [localPeriodDate, setLocalPeriodDate] = useState(periodDate || '');
 
-  // НОВЫЙ СТЭЙТ: Режим редактирования даты
   const [isEditingCycle, setIsEditingCycle] = useState(false);
 
-  // Стэйты для анимации взрыва
   const [isExploding, setIsExploding] = useState(false);
   const [explosionParticles, setExplosionParticles] = useState([]);
   const [explosionOrigin, setExplosionOrigin] = useState({ x: 0, y: 0 });
@@ -25,7 +24,6 @@ const Home = ({ userName, gender, periodDate }) => {
   const [showZeroStreakMessage, setShowZeroStreakMessage] = useState(false);
   const [isGoalAnimating, setIsGoalAnimating] = useState(false);
 
-  // Стэйты для модального окна полного календаря
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date().getMonth());
   const [calendarYear, setCalendarYear] = useState(new Date().getFullYear());
@@ -33,7 +31,6 @@ const Home = ({ userName, gender, periodDate }) => {
   const [selectedActivityItem, setSelectedActivityItem] = useState(null);
   const [isCycleModalOpen, setIsCycleModalOpen] = useState(false);
 
-  // --- ИЗМЕНЕНИЕ: АСИНХРОННАЯ ЗАГРУЗКА ИЗ localforage ---
   useEffect(() => {
     const loadActivities = async () => {
       try {
@@ -50,9 +47,18 @@ const Home = ({ userName, gender, periodDate }) => {
   }, []);
 
   useEffect(() => {
-    // Надежная синхронизация: всегда берем самую свежую дату из памяти телефона
-    setLocalPeriodDate(localStorage.getItem('periodDate') || '');
-  }, [periodDate]);
+  const loadPeriodDate = async () => {
+    try {
+      const storedDate = await localforage.getItem('periodDate');
+      if (storedDate) {
+        setLocalPeriodDate(storedDate);
+      }
+    } catch (error) {
+      console.error("Błąd ładowania cyklu:", error);
+    }
+  };
+  loadPeriodDate();
+}, [periodDate]);
 
   const activityTypes = [
     { id: 'Bieganie', icon: <Flame size={20} className="text-orange-400" /> },
@@ -81,22 +87,22 @@ const Home = ({ userName, gender, periodDate }) => {
 
     if (selectedDate === todayStr) {
       if (hasActivitySelected) {
-        if (hour >= 5 && hour < 12) return "Poranny trening zaliczony! 🔥";
-        if (hour >= 12 && hour < 18) return "Świetne tempo dzisiaj! ⚡";
-        return "Świetna robota dzisiaj! 🌙";
+        if (hour >= 5 && hour < 12) return t('greeting.morning_done');
+        if (hour >= 12 && hour < 18) return t('greeting.great_pace');
+        return t('greeting.great_job');
       } else {
-        if (hour >= 5 && hour < 12) return "Gotowy na poranny trening? 🌅";
-        if (hour >= 12 && hour < 18) return "Czas na popołudniową aktywność! ⚡";
-        return "Zacznij swoją aktywność już teraz! 🌙";
+        if (hour >= 5 && hour < 12) return t('greeting.morning_ready');
+        if (hour >= 12 && hour < 18) return t('greeting.afternoon_time');
+        return t('greeting.start_now');
       }
     } else if (selectedDate < todayStr) {
       if (hasActivitySelected) {
-        return "Trening zaliczony w tym dniu! 🔥";
+        return t('greeting.training_done');
       } else {
-        return "Dzień regeneracji? 🌱";
+        return t('greeting.rest_day');
       }
     } else {
-      return "Planujesz nowy trening? 🎯";
+      return t('greeting.planning_new');
     }
   };
 
@@ -117,31 +123,31 @@ const Home = ({ userName, gender, periodDate }) => {
 
     if (cycleDayNum >= 1 && cycleDayNum <= 7) {
       return { 
-        day: cycleDayNum, name: "Faza menstruacyjna", icon: Waves, color: "text-blue-400", bg: "bg-blue-500/20", border: "border-blue-500/30",
-        goal: 20, energy: "Niski", 
-        advice: "Daj ciału odpocząć. Wybierz lekką Jogę, Rozciąganie lub krótki spacer.",
-        nutrition: "Jedz pokarmy bogate w żelazo, zdrowe tłuszcze i gorzką czekoladę."
+        day: cycleDayNum, name: t('cycle.phase_menstrual'), icon: Waves, color: "text-blue-400", bg: "bg-blue-500/20", border: "border-blue-500/30",
+        goal: 20, energy: t('cycle.energy_low'), 
+        advice: t('cycle.menstrual_advice'),
+        nutrition: t('cycle.menstrual_nutrition')
       };
     } else if (cycleDayNum >= 8 && cycleDayNum <= 12) { 
       return { 
-        day: cycleDayNum, name: "Faza folikularna", icon: Zap, color: "text-yellow-400", bg: "bg-yellow-500/20", border: "border-yellow-500/30",
-        goal: 40, energy: "Wysoki", 
-        advice: "Energia rośnie! Świetny czas na Kardio, bieganie i nowe wyzwania.",
-        nutrition: "Wybieraj lekkie, świeże posiłki, sałatki, chude białko i fermentowane jedzenie."
+        day: cycleDayNum, name: t('cycle.phase_follicular'), icon: Zap, color: "text-yellow-400", bg: "bg-yellow-500/20", border: "border-yellow-500/30",
+        goal: 40, energy: t('cycle.energy_high'), 
+        advice: t('cycle.follicular_advice'),
+        nutrition: t('cycle.follicular_nutrition')
       };
     } else if (cycleDayNum >= 13 && cycleDayNum <= 15) {
       return { 
-        day: cycleDayNum, name: "Owulacja", icon: Flame, color: "text-orange-400", bg: "bg-orange-500/20", border: "border-orange-500/30",
-        goal: 45, energy: "Maksymalny", 
-        advice: "Jesteś na szczycie! Najlepszy czas na ciężką Siłownię i bicie rekordów.",
-        nutrition: "Jedz warzywa krzyżowe (np. brokuły), aby pomóc w metabolizmie estrogenów."
+        day: cycleDayNum, name: t('cycle.phase_ovulation'), icon: Flame, color: "text-orange-400", bg: "bg-orange-500/20", border: "border-orange-500/30",
+        goal: 45, energy: t('cycle.energy_max'), 
+        advice: t('cycle.ovulation_advice'),
+        nutrition: t('cycle.ovulation_nutrition')
       };
     } else {
       return { 
-        day: cycleDayNum, name: "Faza lutealna", icon: Flower2, color: "text-pink-400", bg: "bg-pink-500/20", border: "border-pink-500/30",
-        goal: 30, energy: "Spadający", 
-        advice: "Zwolnij tempo w drugiej połowie fazy. Wybierz Pilates lub umiarkowany trening.",
-        nutrition: "Sięgaj po złożone węglowodany (bataty, komosa), by zapobiec spadkom cukru."
+        day: cycleDayNum, name: t('cycle.phase_luteal'), icon: Flower2, color: "text-pink-400", bg: "bg-pink-500/20", border: "border-pink-500/30",
+        goal: 30, energy: t('cycle.energy_falling'), 
+        advice: t('cycle.luteal_advice'),
+        nutrition: t('cycle.luteal_nutrition')
       };
     }
   };
@@ -181,15 +187,17 @@ const Home = ({ userName, gender, periodDate }) => {
   };
 
   const weekDates = getDatesOfWeek();
-  const weekDaysShort = ['Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb', 'Nd'];
+  const weekDaysShort = [t('days.mon'), t('days.tue'), t('days.wed'), t('days.thu'), t('days.fri'), t('days.sat'), t('days.sun')];
 
   const defaultGoalMinutes = gender === 'female' ? 30 : 50;
   const dailyGoalMinutes = currentCycleData ? currentCycleData.goal : defaultGoalMinutes; 
   
   const todayActivities = activities.filter(a => a.date === selectedDate);
   const totalMinutesToday = todayActivities.reduce((sum, a) => sum + parseInt(a.duration || 0), 0);
+  const totalCaloriesToday = todayActivities.reduce((sum, a) => sum + parseInt(a.calories || 0), 0);
   const goalProgress = Math.min((totalMinutesToday / dailyGoalMinutes) * 100, 100);
   const isGoalReached = totalMinutesToday >= dailyGoalMinutes;
+  
 
   const calculateStreak = () => {
     if (!activities || activities.length === 0) return 0;
@@ -288,7 +296,7 @@ const Home = ({ userName, gender, periodDate }) => {
     }, 1100);
   };
 
-  const monthNames = ['Styczeń', 'Luty', 'Marzec', 'Kwiecień', 'Maj', 'Czerwiec', 'Lipiec', 'Sierpień', 'Wrzesień', 'Październik', 'Listopad', 'Grudzień'];
+  const monthNames = [t('months.jan'), t('months.feb'), t('months.mar'), t('months.apr'), t('months.may'), t('months.jun'), t('months.jul'), t('months.aug'), t('months.sep'), t('months.oct'), t('months.nov'), t('months.dec')];
   const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
   const firstDayOfMonth = new Date(calendarYear, calendarMonth, 1).getDay();
   const startingEmptyCells = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
@@ -325,11 +333,11 @@ const Home = ({ userName, gender, periodDate }) => {
     setIsDatePickerOpen(true);
   };
 
-  const handleLogPeriod = () => {
-    setLocalPeriodDate(selectedDate);
-    localStorage.setItem('periodDate', selectedDate);
-    setIsEditingCycle(false);
-  };
+  const handleLogPeriod = async () => {
+  setLocalPeriodDate(selectedDate);
+  await localforage.setItem('periodDate', selectedDate);
+  setIsEditingCycle(false);
+};
 
   const todayStr = new Date().toISOString().split('T')[0];
   const isToday = selectedDate === todayStr;
@@ -337,9 +345,28 @@ const Home = ({ userName, gender, periodDate }) => {
   const radius = 35;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (goalProgress / 100) * circumference;
+  const getTranslatedIntensity = (rawLvl) => {
+    if (!rawLvl) return '';
+    const l = rawLvl.toLowerCase();
+    if (l.includes('niska') || l.includes('low')) return t('add_activity.intensity_low');
+    if (l.includes('średnia') || l.includes('srednia') || l.includes('medium')) return t('add_activity.intensity_medium');
+    if (l.includes('wysoka') || l.includes('high')) return t('add_activity.intensity_high');
+    return rawLvl;
+  };
 
   return (
-    <div className="w-full pb-28 pt-6 px-4 sm:px-6 mx-auto max-w-7xl relative">
+    <div className="w-full pb-28 pt-2 px-4 sm:px-6 mx-auto max-w-7xl relative">
+      <div 
+        className="fixed top-0 left-0 w-full z-[90] pointer-events-none"
+        style={{
+          height: 'calc(env(safe-area-inset-top) + 80px)',
+          background: 'linear-gradient(to bottom, rgba(11, 3, 22, 1) 0%, rgba(11, 3, 22, 0.6) 40%, transparent 100%)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)',
+          maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)'
+        }}
+      ></div>
       
       <style>{`
         * { -webkit-tap-highlight-color: transparent; }
@@ -407,27 +434,25 @@ const Home = ({ userName, gender, periodDate }) => {
         }
       `}</style>
 
-      {/* ШАПКА */}
       <div className="mb-8 text-left fade-in-up">
         <h2 className="text-3xl font-black bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent mb-1">
-          {userName ? `Cześć, ${userName}!` : 'Cześć!'}
+          {userName ? t('home.greeting_name', { name: userName }) : t('home.greeting_default')}
         </h2>
         <p className="text-purple-400/60 text-sm font-medium tracking-wide">
           {getGreeting()}
         </p>
       </div>
 
-      {/* МИНИ-НЕДЕЛЯ С КНОПКОЙ КАЛЕНДАРЯ */}
       <div className="bg-[#13072E]/40 backdrop-blur-xl border border-purple-500/20 rounded-3xl p-4 mb-4 shadow-[0_8px_30px_rgba(147,51,234,0.1)] fade-in-up" style={{ animationDelay: '0.1s' }}>
         <div className="flex justify-between items-center mb-4 px-2">
-          <span className="text-white font-bold tracking-wide">Wybrany Tydzień</span>
+          <span className="text-white font-bold tracking-wide">{t('home.selected_week')}</span>
           
           <button 
             onClick={openCalendar}
             className="flex items-center gap-1.5 px-2 py-1 bg-purple-500/10 hover:bg-purple-500/25 text-purple-400 hover:text-purple-300 rounded-lg transition-all active:scale-95 border border-purple-500/20 select-none focus:outline-none"
           >
             <CalendarDays size={14} />
-            <span className="text-[10px] font-bold uppercase tracking-wider select-none">Kalendarz</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider select-none">{t('home.calendar_btn')}</span>
           </button>
         </div>
         
@@ -464,7 +489,6 @@ const Home = ({ userName, gender, periodDate }) => {
                       : 'hover:bg-white/5 border border-transparent'}
                 `}
               >
-                {/* РОЗОВАЯ ТОЧКА МЕСЯЧНЫХ */}
                 {isPeriodDay && (
                   <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-pink-500 shadow-[0_0_5px_rgba(236,72,153,0.8)] animate-pulse"></div>
                 )}
@@ -485,11 +509,9 @@ const Home = ({ userName, gender, periodDate }) => {
         </div>
       </div>
 
-      {/* --- БЛОК С ЖЕНСКИМ ЦИКЛОМ (Показывается только если gender === 'female') --- */}
       {gender === 'female' && (
         <div className="mb-6 flex flex-col items-center w-full fade-in-up" style={{ animationDelay: '0.15s' }}>
           
-          {/* КАРТОЧКА ВИДЖЕТА */}
           {currentCycleData ? (
             <div 
               onClick={() => setIsCycleModalOpen(true)}
@@ -501,7 +523,7 @@ const Home = ({ userName, gender, periodDate }) => {
                 </div>
                 <div>
                   <h4 className="text-[11px] font-bold text-white uppercase tracking-wider mb-0.5 group-hover:text-pink-100 transition-colors">
-                    {currentCycleData.name} <span className="text-purple-400/60 ml-1">Dzień {currentCycleData.day}</span>
+                    {currentCycleData.name} <span className="text-purple-400/60 ml-1">{t('home.day')} {currentCycleData.day}</span>
                   </h4>
                   <p className="text-[10px] text-purple-300/70 font-medium line-clamp-1">{currentCycleData.advice}</p>
                 </div>
@@ -516,22 +538,21 @@ const Home = ({ userName, gender, periodDate }) => {
                 </div>
                 <div>
                   <h4 className="text-[11px] font-bold text-white uppercase tracking-wider mb-0.5">
-                    Cykl menstruacyjny
+                    {t('cycle.title')}
                   </h4>
-                  <p className="text-[10px] text-purple-300/60 font-medium line-clamp-1">Brak danych. Zaznacz dzień startu poniżej.</p>
+                  <p className="text-[10px] text-purple-300/60 font-medium line-clamp-1">{t('cycle.no_data')}</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* УМНАЯ КНОПКА С РЕЖИМОМ РЕДАКТИРОВАНИЯ */}
           {!localPeriodDate || isEditingCycle ? (
             <button
               onClick={handleLogPeriod}
               className="mt-3 px-4 py-3 w-[90%] sm:w-[80%] bg-pink-500/10 border border-pink-500/30 text-pink-400 hover:text-pink-200 hover:bg-pink-500/20 text-[10.5px] font-black tracking-widest uppercase rounded-2xl active:scale-95 transition-all duration-300 focus:outline-none flex items-center justify-center gap-2 pink-glow-breathe"
             >
               <Droplet size={16} className="animate-pulse" />
-              <span>Miesiączka zaczęła się {isToday ? 'dzisiaj' : 'w tym dniu'}</span>
+              <span>{t('cycle.period_started')} {isToday ? t('cycle.today_lower') : t('cycle.this_day')}</span>
             </button>
           ) : (
             <div className="mt-3 w-[90%] sm:w-[80%] flex h-11 rounded-2xl border border-pink-500/30 bg-pink-500/10 overflow-hidden pink-glow-breathe transition-all">
@@ -539,12 +560,12 @@ const Home = ({ userName, gender, periodDate }) => {
               <div className="flex-1 flex items-center justify-center px-1 sm:px-2 text-pink-400 text-[8.5px] sm:text-[10px] font-black tracking-widest uppercase text-center leading-none whitespace-nowrap">
                 {currentCycleData && currentCycleData.day <= 7 ? (
                   <span className="flex items-center gap-1.5 sm:gap-2">
-                    <span>Miesiączka: {8 - currentCycleData.day} {8 - currentCycleData.day === 1 ? 'dzień' : 'dni'}</span>
+                    <span>{t('cycle.period_prefix')}: {8 - currentCycleData.day} {8 - currentCycleData.day === 1 ? t('cycle.day_singular') : t('cycle.days_plural')}</span>
                     <span className="opacity-40">|</span>
-                    <span className="text-pink-500/80">Następna za {daysUntilNextPeriod} dni</span>
+                    <span className="text-pink-500/80">{t('cycle.next_in')} {daysUntilNextPeriod} {t('cycle.days_plural')}</span>
                   </span>
                 ) : (
-                  <span>Następna za {daysUntilNextPeriod} dni</span>
+                  <span>{t('cycle.next_in')} {daysUntilNextPeriod} {t('cycle.days_plural')}</span>
                 )}
               </div>
               
@@ -575,7 +596,7 @@ const Home = ({ userName, gender, periodDate }) => {
           `}
         >
           <span className="text-xs font-bold text-purple-200 tracking-wider uppercase mb-3 flex items-center gap-1.5 z-10 text-center">
-            <Clock size={14} className={isGoalReached ? 'text-emerald-400' : 'text-indigo-400'}/> Cel Dnia
+            <Clock size={14} className={isGoalReached ? 'text-emerald-400' : 'text-indigo-400'}/> {t('home.daily_goal')}
           </span>
           <div className="relative flex items-center justify-center w-24 h-24">
             <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90 overflow-visible">
@@ -594,14 +615,19 @@ const Home = ({ userName, gender, periodDate }) => {
               <span className="text-[9px] font-bold text-purple-400 uppercase mt-1">/ {dailyGoalMinutes} min</span>
             </div>
           </div>
+          {/* ВЫВОД КАЛОРИЙ ЗА ДЕНЬ */}
+          {totalCaloriesToday > 0 && (
+             <div className="mt-3 text-[10px] font-black uppercase tracking-widest text-orange-400 flex items-center gap-1 bg-orange-500/10 px-2 py-1 rounded-lg border border-orange-500/30">
+               <Flame size={12}/> {totalCaloriesToday} kcal
+             </div>
+          )}
           {isGoalReached && (
              <div className="mt-3 text-[10px] font-black uppercase tracking-widest text-emerald-400 flex items-center gap-1 bg-emerald-400/10 px-2 py-1 rounded-lg border border-emerald-400/30 shadow-[0_0_10px_rgba(52,211,153,0.2)] animate-pulse">
-               <CheckCircle2 size={12}/> Zrealizowano
+               <CheckCircle2 size={12}/> {t('home.completed')}
              </div>
           )}
         </div>
 
-        {/* КАРТОЧКА СЕРИИ */}
         <div 
           onClick={handleStreakClick}
           className={`bg-[#13072E]/40 backdrop-blur-xl border border-purple-500/20 rounded-3xl p-5 flex flex-col items-center justify-center relative cursor-pointer transition-colors z-20 select-none
@@ -616,23 +642,22 @@ const Home = ({ userName, gender, periodDate }) => {
           </div>
 
           <span className="text-xs font-bold text-purple-200 tracking-wider uppercase mb-2 flex items-center gap-1.5 relative z-10">
-            <Flame size={14} className="text-orange-400"/> Seria
+            <Flame size={14} className="text-orange-400"/> {t('home.streak')}
           </span>
           <div className="flex items-end gap-1 relative z-10 mt-2">
             <span className="text-5xl font-black bg-gradient-to-br from-orange-400 to-red-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(249,115,22,0.3)]">
               {currentStreak}
             </span>
           </div>
-          <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-widest mt-1 relative z-10">Dni z rzędu</span>
+          <span className="text-[10px] font-bold text-purple-400/60 uppercase tracking-widest mt-1 relative z-10">{t('home.days_in_a_row')}</span>
         </div>
 
       </div>
 
-      {/* АКТИВНОСТИ ЗА ВЫБРАННЫЙ ДЕНЬ */}
       <div className="fade-in-up" style={{ animationDelay: '0.3s' }}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-extrabold text-white tracking-wide">
-            Aktywności: <span className="text-purple-400">{selectedDate}</span>
+            {t('home.activities_title')}: <span className="text-purple-400">{selectedDate}</span>
           </h3>
         </div>
 
@@ -645,14 +670,14 @@ const Home = ({ userName, gender, periodDate }) => {
               <div className="w-14 h-14 rounded-full bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
                 <Activity size={28} className="text-purple-400/80 group-hover:text-fuchsia-400 transition-colors" />
               </div>
-              <p className="text-slate-200 font-bold tracking-wide mb-1.5 group-hover:text-white transition-colors">Brak aktywności</p>
+              <p className="text-slate-200 font-bold tracking-wide mb-1.5 group-hover:text-white transition-colors">{t('home.no_activities')}</p>
               <p className="text-[10px] text-fuchsia-400/80 uppercase tracking-widest font-bold bg-fuchsia-500/10 px-3 py-1 rounded-lg">
-                + Dodaj pierwszy trening
+                + {t('home.add_first_workout')}
               </p>
             </button>
           ) : (
             [...todayActivities].reverse().map((a, i) => {
-              const displayLabel = a.customName ? a.customName : a.type;
+              const displayLabel = a.customName ? a.customName : t(`activities.${a.type}`, { defaultValue: a.type });
               
               return (
                 <div 
@@ -678,8 +703,13 @@ const Home = ({ userName, gender, periodDate }) => {
                           </span>
                         )}
                         <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-purple-300/70 whitespace-nowrap">
-                          <Zap size={12} className="text-yellow-400"/> {a.intensity}
+                          <Zap size={12} className="text-yellow-400"/> {getTranslatedIntensity(a.intensity)}
                         </span>
+                        {a.calories && (
+                          <span className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-orange-400/90 whitespace-nowrap">
+                            <Flame size={12} className="text-orange-500"/> {a.calories} kcal
+                          </span>
+                        )}
                         {a.mood && (
                           <span className="flex items-center gap-1 text-[12px] font-bold uppercase tracking-wider text-purple-300/70 whitespace-nowrap">
                             <Smile size={12} className="text-emerald-400"/> {a.mood}
@@ -696,7 +726,6 @@ const Home = ({ userName, gender, periodDate }) => {
         </div>
       </div>
 
-      {/* --- МОДАЛЬНОЕ ОКНО "ПОДРОБНОСТИ ЦИКЛА" --- */}
       {isCycleModalOpen && currentCycleData && (
         <div className="fixed inset-0 z-[130] flex items-end sm:items-center justify-center bg-[#0B0316]/90 backdrop-blur-md transition-all duration-300">
           <div className="bg-[#13072E] border-t sm:border border-purple-500/40 rounded-t-[2rem] sm:rounded-[2rem] p-6 w-full max-w-md shadow-[0_-20px_60px_rgba(168,85,247,0.2)] animate-modal-pop">
@@ -708,7 +737,7 @@ const Home = ({ userName, gender, periodDate }) => {
                 </div>
                 <div>
                   <h3 className="text-xl font-black text-white leading-tight">{currentCycleData.name}</h3>
-                  <p className="text-sm font-bold text-purple-400/80">Dzień {currentCycleData.day} cyklu</p>
+                  <p className="text-sm font-bold text-purple-400/80">{t('cycle.cycle_day_full', { day: currentCycleData.day })}</p>
                 </div>
               </div>
               <button onClick={() => setIsCycleModalOpen(false)} className="text-purple-400 hover:text-white transition-colors p-2 bg-white/5 rounded-full focus:outline-none">
@@ -720,7 +749,7 @@ const Home = ({ userName, gender, periodDate }) => {
               <div className="bg-[#0B0316]/60 border border-purple-500/10 rounded-2xl p-4 flex gap-3">
                 <Battery size={20} className={currentCycleData.color} />
                 <div>
-                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">Poziom energii</p>
+                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">{t('cycle.energy_level')}</p>
                   <p className="text-sm text-white font-medium">{currentCycleData.energy}</p>
                 </div>
               </div>
@@ -728,7 +757,7 @@ const Home = ({ userName, gender, periodDate }) => {
               <div className="bg-[#0B0316]/60 border border-purple-500/10 rounded-2xl p-4 flex gap-3">
                 <Dumbbell size={20} className="text-fuchsia-400" />
                 <div>
-                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">Trening (Cel: {currentCycleData.goal} min)</p>
+                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">{t('cycle.workout_goal', { goal: currentCycleData.goal })}</p>
                   <p className="text-sm text-white font-medium leading-snug">{currentCycleData.advice}</p>
                 </div>
               </div>
@@ -736,7 +765,7 @@ const Home = ({ userName, gender, periodDate }) => {
               <div className="bg-[#0B0316]/60 border border-purple-500/10 rounded-2xl p-4 flex gap-3">
                 <Apple size={20} className="text-emerald-400" />
                 <div>
-                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">Odżywianie</p>
+                  <p className="text-[10px] font-bold uppercase text-purple-400/60 mb-0.5">{t('cycle.nutrition')}</p>
                   <p className="text-sm text-white font-medium leading-snug">{currentCycleData.nutrition}</p>
                 </div>
               </div>
@@ -746,13 +775,12 @@ const Home = ({ userName, gender, periodDate }) => {
               onClick={() => setIsCycleModalOpen(false)} 
               className="w-full py-3.5 bg-purple-500/10 text-purple-300 font-bold tracking-widest uppercase rounded-2xl hover:bg-purple-500/20 active:scale-95 transition-all focus:outline-none"
             >
-              Zamknij
+              {t('home.close')}
             </button>
           </div>
         </div>
       )}
 
-      {/* --- МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ АКТИВНОСТИ --- */}
       {selectedActivityItem && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center px-4 bg-[#0B0316]/90 backdrop-blur-md transition-all duration-300">
           <div className="bg-[#13072E] border border-purple-500/40 rounded-[2rem] p-6 w-full max-w-sm shadow-[0_0_60px_rgba(168,85,247,0.3)] relative animate-modal-pop text-center">
@@ -766,29 +794,41 @@ const Home = ({ userName, gender, periodDate }) => {
             </div>
             
             <h3 className="text-2xl font-black text-white mb-1">
-              {selectedActivityItem.customName || selectedActivityItem.type}
+              {selectedActivityItem.customName || t(`activities.${selectedActivityItem.type}`, { defaultValue: selectedActivityItem.type })}
             </h3>
             <p className="text-sm text-purple-400/60 font-medium mb-6">{selectedActivityItem.date}</p>
 
             <div className="grid grid-cols-2 gap-3 text-left mb-6">
               <div className="bg-[#0B0316]/50 border border-purple-500/10 rounded-xl p-3">
-                <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-400/60 mb-1"><Clock size={12}/> Czas</span>
+                <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-400/60 mb-1"><Clock size={12}/> {t('home.time')}</span>
                 <span className="text-white font-bold whitespace-nowrap">{selectedActivityItem.duration} min</span>
               </div>
+              
               {selectedActivityItem.distance && (
                 <div className="bg-[#0B0316]/50 border border-purple-500/10 rounded-xl p-3">
-                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-400/60 mb-1"><MapPin size={12}/> Dystans</span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-400/60 mb-1"><MapPin size={12}/> {t('home.distance')}</span>
                   <span className="text-white font-bold whitespace-nowrap">{selectedActivityItem.distance} km</span>
                 </div>
               )}
+              
               <div className="bg-[#0B0316]/50 border border-purple-500/10 rounded-xl p-3">
-                <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-400/60 mb-1"><Zap size={12}/> Intensywność</span>
-                <span className="text-white font-bold whitespace-nowrap">{selectedActivityItem.intensity}</span>
+                <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-400/60 mb-1"><Zap size={12}/> {t('home.intensity')}</span>
+                <span className="text-white font-bold whitespace-nowrap">{getTranslatedIntensity(selectedActivityItem.intensity)}</span>
               </div>
+              
               {selectedActivityItem.mood && (
                 <div className="bg-[#0B0316]/50 border border-purple-500/10 rounded-xl p-3">
-                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-400/60 mb-1"><Smile size={12}/> Nastrój</span>
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-purple-400/60 mb-1"><Smile size={12}/> {t('home.mood')}</span>
                   <span className="text-white font-bold text-lg leading-none">{selectedActivityItem.mood}</span>
+                </div>
+              )}
+
+              {selectedActivityItem.calories && (
+                <div className="bg-[#0B0316]/50 border border-purple-500/10 rounded-xl p-3 col-span-2 flex justify-between items-center shadow-inner">
+                  <span className="flex items-center gap-1 text-[10px] font-bold uppercase text-orange-400/80 mb-0">
+                    <Flame size={12}/> {t('activity_details.burned', { defaultValue: 'SPALONO' })}
+                  </span>
+                  <span className="text-orange-400 font-black text-lg leading-none">{selectedActivityItem.calories} kcal</span>
                 </div>
               )}
             </div>
@@ -797,13 +837,12 @@ const Home = ({ userName, gender, periodDate }) => {
               onClick={() => setSelectedActivityItem(null)} 
               className="w-full py-3 bg-purple-500/10 text-purple-300 font-bold tracking-widest uppercase rounded-xl hover:bg-purple-500/20 transition-colors focus:outline-none"
             >
-              Zamknij
+              {t('home.close')}
             </button>
           </div>
         </div>
       )}
 
-      {/* --- МОДАЛЬНОЕ ОКНО КАЛЕНДАРЯ --- */}
       {isDatePickerOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center px-4 bg-[#0B0316]/90 backdrop-blur-md transition-all duration-300">
           <div className="bg-[#13072E] border border-purple-500/40 rounded-[2rem] p-6 w-full max-w-sm shadow-[0_0_60px_rgba(168,85,247,0.3)] relative animate-modal-pop">
@@ -893,14 +932,13 @@ const Home = ({ userName, gender, periodDate }) => {
                   }}
                   className="text-sm font-bold text-purple-400 hover:text-fuchsia-400 transition-colors tracking-widest uppercase focus:outline-none select-none"
                 >
-                  Dzisiaj
+                  {t('home.today')}
                 </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* АНИМАЦИЯ ПОДСКАЗКИ СЕРИИ */}
       {showZeroStreakMessage && (
         <div 
           className="fixed z-[9999] pointer-events-none left-0 right-0 w-full flex justify-center px-4"
@@ -911,12 +949,11 @@ const Home = ({ userName, gender, periodDate }) => {
         >
           <div className="bg-[#0B0316]/90 border border-orange-500/50 text-white text-[11px] sm:text-xs font-bold px-4 py-2.5 rounded-xl shadow-[0_0_20px_rgba(249,115,22,0.3)] backdrop-blur-md flex items-center gap-2 max-w-full text-center">
             <Flame size={16} className="text-orange-400 shrink-0" />
-            <span className="whitespace-normal leading-tight">Trenuj 2 dni z rzędu, by odpalić ogień!</span>
+            <span className="whitespace-normal leading-tight">{t('home.streak_hint')}</span>
           </div>
         </div>
       )}
 
-      {/* ВЗРЫВ */}
       {isExploding && (
         <div className="fixed inset-0 pointer-events-none z-[9999] overflow-visible">
           <div 
