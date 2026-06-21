@@ -6,15 +6,6 @@
 
 <br />
 
-<!-- <div align="center">
-  <img src="https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB" alt="React" />
-  <img src="https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E" alt="JavaScript" />
-  <img src="https://img.shields.io/badge/PWA-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA" />
-  <img src="https://img.shields.io/badge/IndexedDB-4D4D4D?style=for-the-badge&logo=databricks&logoColor=white" alt="IndexedDB" />
-</div> -->
-
 **Fitness Journey** is a modern Progressive Web Application (PWA) designed for tracking physical activities, achieving fitness goals, and maintaining a healthy lifestyle through gamification. The app works completely offline, utilizes local device storage (IndexedDB), and features a sleek, neon-inspired UI optimized for both iOS and Android devices.
 
 🔗 **Demo:** [Open App](https://prado8822.github.io/fitness-journey/) 
@@ -175,7 +166,6 @@ fitness-journey/
 │
 ├── src/                     # Main application source code
 │   ├── components/          # Reusable UI components
-│   │   ├── ActivityList.jsx # Component for displaying the list of activities
 │   │   ├── BadgeSystem.jsx  # Achievements system, badges, and reward modals
 │   │   ├── CalendarView.jsx # Interactive calendar component
 │   │   ├── GoalTracker.jsx  # Animated progress rings (similar to Apple Fitness)
