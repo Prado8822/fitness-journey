@@ -1,10 +1,46 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
+import localforage from 'localforage';
+
+// Создаем кастомный детектор, который работает через IndexedDB (localforage)
+const localForageDetector = {
+  type: 'languageDetector',
+  async: true, 
+  
+  detect: async (callback) => {
+    try {
+      const savedLang = await localforage.getItem('user_language');
+      if (savedLang) {
+        callback(savedLang);
+        return;
+      }
+      
+      const browserLang = navigator.language.split('-')[0];
+      if (['en', 'pl', 'ua'].includes(browserLang)) {
+        callback(browserLang);
+      } else {
+        callback('pl');
+      }
+    } catch (error) {
+      console.error('Ошибка чтения языка из IndexedDB', error);
+      callback('pl');
+    }
+  },
+  
+  init: () => {},
+  
+  cacheUserLanguage: async (lng) => {
+    try {
+      await localforage.setItem('user_language', lng);
+    } catch (error) {
+      console.error('Ошибка сохранения языка в IndexedDB', error);
+    }
+  }
+};
 
 i18n
-  // Подключаем детектор (он сохранит язык в localStorage браузера)
-  .use(LanguageDetector)
+  // Подключаем наш новый детектор
+  .use(localForageDetector)
   // Передаем i18n в react-i18next
   .use(initReactI18next)
   // Инициализируем
